@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Funds - Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <h1 id="welcomeMessage">WELCOME USER</h1>
+            <button class="btn btn-logout" id="logoutBtn">Logout</button>
+        </div>
+
+        <!-- Main Dashboard Section -->
+        <div class="dashboard-section" id="mainDashboard">
+            <div class="card gaming-fund-card">
+                <h3>💰 Gaming Fund</h3>
+                <p class="commission-text">@12% Commission</p>
+                <button class="btn btn-primary btn-large" id="gamingFundBtn">Setup Gaming Fund</button>
+            </div>
+        </div>
+
+        <!-- Gaming Fund Details Section -->
+        <div class="dashboard-section hidden" id="gamingFundSection">
+            <div class="card">
+                <h3>Account Details</h3>
+                <form id="accountDetailsForm">
+                    <div class="form-group">
+                        <label for="accountNumber">Account Number</label>
+                        <input type="text" id="accountNumber" placeholder="Enter account number" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ifscCode">IFSC Code</label>
+                        <input type="text" id="ifscCode" placeholder="Enter IFSC code" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="accountHolder">Account Holder Name</label>
+                        <input type="text" id="accountHolder" placeholder="Enter account holder name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bankName">Bank Name</label>
+                        <input type="text" id="bankName" placeholder="Enter bank name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="contactNumber">Contact Number</label>
+                        <input type="tel" id="contactNumber" placeholder="Enter contact number" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="qrCode">Submit Your QR Code of Account (Optional)</label>
+                        <input type="file" id="qrCode" accept="image/*">
+                        <small>You can proceed without uploading QR code</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Save Account Details</button>
+                </form>
+                <div id="accountDetailsMessage" class="message"></div>
+            </div>
+
+            <div class="card">
+                <button class="btn btn-success btn-large" id="runAccountBtn">Run Your Account Live</button>
+            </div>
+        </div>
+
+        <!-- Activation Section -->
+        <div class="dashboard-section hidden" id="activationSection">
+            <div class="card">
+                <h3>Activate Your Account</h3>
+
+                <!-- New User Offer -->
+                <div class="offer-card">
+                    <h4>🎉 New User – 70% OFF</h4>
+                    <p class="offer-description">Special offer for new users</p>
+                    <button class="btn btn-info" id="newUserOfferBtn">If you are a new user click here</button>
+                    
+                    <!-- New User Payment Details (Hidden Initially) -->
+                    <div class="payment-details hidden" id="newUserPaymentDetails">
+                        <p class="payment-amount">Pay ₹77 Only</p>
+                        
+                        <!-- UPI Details -->
+                        <div class="upi-section">
+                            <h4>Payment via UPI</h4>
+                            <p class="upi-label">UPI ID:</p>
+                            <div class="upi-display">
+                                <span class="upiId">malikworker78@fam</span>
+                                <button class="btn btn-secondary copyUpiBtn">Copy UPI ID</button>
+                            </div>
+                            <div class="copyMessage copy-message"></div>
+                        </div>
+
+                        <!-- UTR Submission -->
+                        <div class="form-group">
+                            <label for="newUserUtrInput">Submit UTR</label>
+                            <input type="text" id="newUserUtrInput" class="utrInput" placeholder="Enter UTR number">
+                            <button class="btn btn-primary submitUtrBtn">Submit UTR</button>
+                        </div>
+                        <div class="utrMessage message"></div>
+                    </div>
+                </div>
+
+                <!-- Old User Offer -->
+                <div class="offer-card">
+                    <h4>👤 Old User – 20% OFF</h4>
+                    <p class="offer-description">Return user discount</p>
+                    <button class="btn btn-info" id="oldUserOfferBtn">If you are an old user click here</button>
+                    
+                    <!-- Old User Payment Details (Hidden Initially) -->
+                    <div class="payment-details hidden" id="oldUserPaymentDetails">
+                        <p class="payment-amount">Pay ₹157 Only</p>
+                        
+                        <!-- UPI Details -->
+                        <div class="upi-section">
+                            <h4>Payment via UPI</h4>
+                            <p class="upi-label">UPI ID:</p>
+                            <div class="upi-display">
+                                <span class="upiId">malikworker78@fam</span>
+                                <button class="btn btn-secondary copyUpiBtn">Copy UPI ID</button>
+                            </div>
+                            <div class="copyMessage copy-message"></div>
+                        </div>
+
+                        <!-- UTR Submission -->
+                        <div class="form-group">
+                            <label for="oldUserUtrInput">Submit UTR</label>
+                            <input type="text" id="oldUserUtrInput" class="utrInput" placeholder="Enter UTR number">
+                            <button class="btn btn-primary submitUtrBtn">Submit UTR</button>
+                        </div>
+                        <div class="utrMessage message"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Section -->
+        <div class="dashboard-section hidden" id="successSection">
+            <div class="card success-card">
+                <h3>✅ Success!</h3>
+                <p id="successMessage">Your panel has been successfully activated</p>
+                <button class="btn btn-success btn-large" id="finalRunBtn">Click here to run your account</button>
+            </div>
+        </div>
+
+        <!-- Final Message Section -->
+        <div class="dashboard-section hidden" id="finalMessageSection">
+            <div class="card final-card">
+                <h3>⏱️ Account Processing</h3>
+                <p class="final-message">Your account will be run in 90 minutes.<br>Please come back after 90 minutes.</p>
+                <button class="btn btn-primary" id="backToDashboardBtn">Back to Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
