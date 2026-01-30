@@ -553,3 +553,162 @@ body {
         padding: 10px 15px;
     }
 }
+
+/* Running Account Panel Styles */
+.running-card .running-header {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--danger-color);
+    margin-bottom: 6px;
+}
+
+.running-card .running-subheader {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 18px;
+}
+
+.running-main {
+    display: flex;
+    gap: 20px;
+}
+
+.running-left {
+    flex: 2;
+}
+
+.running-right {
+    flex: 1;
+}
+
+.balance-display {
+    background: rgba(15,23,42,0.6);
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+}
+
+#liveBalance {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--success-color);
+}
+
+.transactions {
+    margin-top: 12px;
+}
+
+.transaction-feed {
+    max-height: 240px;
+    overflow-y: auto;
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 8px;
+}
+
+.transaction {
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.15);
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.side-panel {
+    background: rgba(99,102,241,0.04);
+    padding: 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+}
+
+#commissionAmount {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--secondary-color);
+    margin: 12px 0;
+}
+
+/* Modal for withdraw/upgrade */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.modal {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 12px;
+    width: 420px;
+    border: 1px solid var(--border-color);
+}
+
+.modal h4 {
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.modal .upi-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.modal .utr-row {
+    margin-top: 12px;
+}
+
+@media (max-width: 768px) {
+    .running-main { flex-direction: column; }
+    .modal { width: 90%; }
+}
+
+/* Withdraw Commission Panel */
+#withdrawCommissionSection .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+#withdrawCommissionSection .form-group input {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: rgba(15,23,42,0.6);
+    color: var(--text-primary);
+}
+
+#withdrawCommissionSection .form-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(99,102,241,0.1);
+}
+
+.withdrawal-message {
+    margin: 15px 0;
+    padding: 12px;
+    border-radius: 8px;
+    background: rgba(239,68,68,0.1);
+    color: var(--danger-color);
+    border: 1px solid var(--danger-color);
+}
+
+.payment-confirmation-note {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 8px;
+    background: rgba(245,158,11,0.1);
+    color: var(--warning-color);
+    border: 1px solid var(--warning-color);
+    font-weight: 600;
+}

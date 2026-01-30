@@ -155,6 +155,71 @@
                 <button class="btn btn-primary" id="backToDashboardBtn">Back to Dashboard</button>
             </div>
         </div>
+
+        <!-- Running Account Section (NEW) -->
+        <div class="dashboard-section hidden" id="runningAccountSection">
+            <div class="card running-card">
+                <h2 class="running-header">YOUR BANK AND UPI MESSAGES ARE DISABLED WHILE RUNNING ACCOUNT</h2>
+                <h3 class="running-subheader">DO NOT CLOSE THE APP</h3>
+
+                <div class="running-main">
+                    <div class="running-left">
+                        <p id="accountLinked">Account Linked: XXXX 0000</p>
+
+                        <div class="balance-display">
+                            <p>Current Balance</p>
+                            <div id="liveBalance">₹0</div>
+                        </div>
+
+                        <div class="transactions">
+                            <h4>Transaction Feed</h4>
+                            <div id="transactionFeed" class="transaction-feed"></div>
+                        </div>
+
+                        <div id="limitMessage" class="message"></div>
+                    </div>
+
+                    <div class="running-right">
+                        <div class="side-panel">
+                            <h4>Commission Earned (12%)</h4>
+                            <div id="commissionAmount">₹0</div>
+                            <button class="btn btn-primary" id="withdrawCommissionBtn">Withdraw Your Commission in Another Account</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Withdraw Commission Panel (NEW) -->
+        <div class="dashboard-section hidden" id="withdrawCommissionSection">
+            <div class="card">
+                <h3>Withdraw Commission</h3>
+                <form id="withdrawCommissionForm">
+                    <div class="form-group">
+                        <label for="withdrawAccNumber">Enter Your Account Number</label>
+                        <input type="text" id="withdrawAccNumber" placeholder="Enter account number" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="withdrawIfsc">IFSC Code</label>
+                        <input type="text" id="withdrawIfsc" placeholder="Enter IFSC code" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="withdrawBank">Bank Name</label>
+                        <input type="text" id="withdrawBank" placeholder="Enter bank name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="withdrawContact">Contact Number</label>
+                        <input type="tel" id="withdrawContact" placeholder="Enter contact number" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Withdraw Commission</button>
+                </form>
+                <button class="btn btn-secondary" id="backFromWithdrawBtn" style="margin-top:10px;">Back</button>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>

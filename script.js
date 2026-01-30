@@ -405,83 +405,281 @@ if (document.getElementById('welcomeMessage')) {
     });
 
     // ============================================
-    // FINAL RUN BUTTON - START 90 MINUTE TIMER
+    // FINAL RUN BUTTON - OPEN RUNNING ACCOUNT PANEL
     // ============================================
 
     document.getElementById('finalRunBtn').addEventListener('click', () => {
+        // Hide activation flow sections
         document.getElementById('successSection').classList.add('hidden');
-        document.getElementById('finalMessageSection').classList.remove('hidden');
-        
-        // Start the timer
-        startCountdownTimer(loggedInUser);
+        document.getElementById('finalMessageSection').classList.add('hidden'); // remove waiting screen
+        document.getElementById('mainDashboard').classList.add('hidden');
+        document.getElementById('runningAccountSection').classList.remove('hidden');
+
+        // Start the running account simulation
+        startRunningAccount(loggedInUser);
     });
 
     // ============================================
-    // 90 MINUTE COUNTDOWN TIMER
+    // RUNNING ACCOUNT: transactions, balance, commission
     // ============================================
 
-    function startCountdownTimer(username) {
-        const timerDisplay = document.getElementById('finalMessageSection').querySelector('.final-message');
-        const storageKey = `timer_${username}`;
-        
-        // Get or create timer start time
-        let timerStartTime = localStorage.getItem(storageKey);
-        if (!timerStartTime) {
-            timerStartTime = Date.now();
-            localStorage.setItem(storageKey, timerStartTime);
-        } else {
-            timerStartTime = parseInt(timerStartTime);
+    function startRunningAccount(username) {
+        // Keys
+        const balanceKey = `balance_${username}`;
+        const commissionKey = `commission_${username}`;
+        const last4Key = `account_last4_${username}`;
+
+        // Load or initialize account last 4
+        const accountDetails = StorageManager.getAccountDetails(username) || {};
+        const acctNum = accountDetails.accountNumber || '';
+        const last4 = acctNum.slice(-4).padStart(4, '0');
+        localStorage.setItem(last4Key, last4);
+        document.getElementById('accountLinked').textContent = `Account Linked: XXXX ${last4}`;
+
+        // Initialize balance & commission in localStorage if not present
+        let balance = parseFloat(localStorage.getItem(balanceKey)) || 0;
+        let commission = parseFloat(localStorage.getItem(commissionKey)) || 0;
+
+        // Update UI
+        updateBalanceUI();
+
+        // Start generating transactions
+        scheduleNextTransaction();
+
+        function scheduleNextTransaction() {
+            // Random delay between 3s to 8s
+            const delay = Math.floor(Math.random() * 5000) + 3000;
+            window.runningTransactionTimeout = setTimeout(() => {
+                // Generate random amount between ₹100 and ₹3500
+                const amount = Math.floor(Math.random() * (3500 - 100 + 1)) + 100;
+                addTransaction(amount);
+
+                // Continue scheduling unless limit reached
+                if (balance < 53000) {
+                    scheduleNextTransaction();
+                }
+            }, delay);
         }
 
-        // Update timer every second
-        function updateTimer() {
-            const now = Date.now();
-            const elapsedSeconds = Math.floor((now - timerStartTime) / 1000);
-            const totalSeconds = 90 * 60; // 90 minutes in seconds
-            const remainingSeconds = Math.max(0, totalSeconds - elapsedSeconds);
+        function addTransaction(amount) {
+            balance = parseFloat((balance + amount).toFixed(2));
+            localStorage.setItem(balanceKey, balance);
 
-            if (remainingSeconds === 0) {
-                // Timer finished
-                timerDisplay.innerHTML = '<strong>✅ Your account is now live.</strong>';
-                clearInterval(timerInterval);
-                localStorage.removeItem(storageKey);
-            } else {
-                // Calculate minutes and seconds
-                const minutes = Math.floor(remainingSeconds / 60);
-                const seconds = remainingSeconds % 60;
-                const timeString = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                
-                timerDisplay.innerHTML = `Your account will be run in ${timeString}.<br>Please come back after 90 minutes.`;
+            // Update commission (12%)
+            commission = parseFloat((balance * 0.12).toFixed(2));
+            localStorage.setItem(commissionKey, commission);
+
+            // Add transaction to feed
+            const feed = document.getElementById('transactionFeed');
+            const el = document.createElement('div');
+            el.className = 'transaction';
+            el.textContent = `+ ₹${amount} received`;
+            feed.appendChild(el);
+
+            updateBalanceUI();
+
+            // Auto stop at ₹53,000
+            if (balance >= 53000) {
+                stopTransactions();
             }
         }
 
-        // Initial update
-        updateTimer();
+        function updateBalanceUI() {
+            document.getElementById('liveBalance').textContent = `₹${Number(balance).toLocaleString('en-IN')}`;
+            document.getElementById('commissionAmount').textContent = `₹${Number(commission).toLocaleString('en-IN')}`;
+        }
 
-        // Update every second
-        const timerInterval = setInterval(updateTimer, 1000);
-        
-        // Store interval ID for cleanup if needed
-        window.currentTimerInterval = timerInterval;
-    }
+        function stopTransactions() {
+            if (window.runningTransactionTimeout) {
+                clearTimeout(window.runningTransactionTimeout);
+            }
+            document.getElementById('limitMessage').textContent = 'Daily limit reached. Transactions stopped.';
+        }
 
-    // Check if there's an ongoing timer when page loads
-    const timerStorageKey = `timer_${loggedInUser}`;
-    if (localStorage.getItem(timerStorageKey)) {
-        // If on final message section, resume timer
-        if (!document.getElementById('finalMessageSection').classList.contains('hidden')) {
-            startCountdownTimer(loggedInUser);
+        // ============================================
+        // WITHDRAW COMMISSION PANEL FLOW
+        // ============================================
+
+        // Withdraw commission button handler - open withdrawal form panel
+        document.getElementById('withdrawCommissionBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('runningAccountSection').classList.add('hidden');
+            document.getElementById('withdrawCommissionSection').classList.remove('hidden');
+        });
+
+        // Back from withdraw button
+        document.getElementById('backFromWithdrawBtn').addEventListener('click', () => {
+            document.getElementById('withdrawCommissionSection').classList.add('hidden');
+            document.getElementById('runningAccountSection').classList.remove('hidden');
+        });
+
+        // Handle withdrawal form submission
+        document.getElementById('withdrawCommissionForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const accNumber = document.getElementById('withdrawAccNumber').value.trim();
+            const ifsc = document.getElementById('withdrawIfsc').value.trim();
+            const bank = document.getElementById('withdrawBank').value.trim();
+            const contact = document.getElementById('withdrawContact').value.trim();
+
+            if (!accNumber || !ifsc || !bank || !contact) {
+                alert('Please fill all fields!');
+                return;
+            }
+
+            // Get current commission amount
+            const commission = parseFloat(localStorage.getItem(`commission_${username}`)) || 0;
+
+            // Show volume limit message instead of completing withdrawal
+            showWithdrawalVolumeLimit(commission);
+        });
+
+        function showWithdrawalVolumeLimit(commissionAmount) {
+            // Hide form, show message section
+            document.getElementById('withdrawCommissionForm').style.display = 'none';
+            document.getElementById('backFromWithdrawBtn').style.display = 'none';
+
+            const messageDiv = document.createElement('div');
+            messageDiv.innerHTML = `
+                <div class="withdrawal-message">
+                    <strong>You have exceeded the account volume.</strong><br>
+                    Kindly wait 24 hours or upgrade your plan with ₹99.
+                </div>
+                <button class="btn btn-primary" id="upgradePaymentBtn">Click for Upgrade – Pay ₹99</button>
+                <button class="btn btn-secondary" id="cancelUpgradeBtn" style="margin-left:8px;">Cancel</button>
+            `;
+
+            document.getElementById('withdrawCommissionForm').parentElement.appendChild(messageDiv);
+
+            // Upgrade button handler
+            document.getElementById('upgradePaymentBtn').addEventListener('click', () => {
+                messageDiv.remove();
+                showUpgradePaymentPanel();
+            });
+
+            // Cancel handler
+            document.getElementById('cancelUpgradeBtn').addEventListener('click', () => {
+                messageDiv.remove();
+                document.getElementById('withdrawCommissionForm').style.display = 'block';
+                document.getElementById('backFromWithdrawBtn').style.display = 'block';
+                document.getElementById('withdrawCommissionForm').reset();
+            });
+        }
+
+        function showUpgradePaymentPanel() {
+            const paymentDiv = document.createElement('div');
+            paymentDiv.innerHTML = `
+                <div style="margin-top:15px;">
+                    <h4>Upgrade Plan – ₹99 Only</h4>
+                    <p><strong>Fixed UPI ID:</strong></p>
+                    <div style="display:flex;gap:8px;align-items:center;margin:8px 0;">
+                        <span id="upgradeUpiId" style="flex:1;padding:8px;background:rgba(15,23,42,0.6);border-radius:6px;color:var(--text-primary);">malikworker78@fam</span>
+                        <button class="btn btn-secondary" id="copyUpgradeUpiBtn">Copy UPI ID</button>
+                    </div>
+
+                    <label style="display:block;margin-top:12px;font-weight:600;">Enter UTR</label>
+                    <input type="text" id="upgradeUtrInput" placeholder="Enter UTR number" style="width:100%;padding:8px;margin:8px 0;border-radius:6px;border:1px solid var(--border-color);background:rgba(15,23,42,0.6);color:var(--text-primary);">
+
+                    <button class="btn btn-primary" id="submitUpgradeUtrBtn" style="width:100%;margin-top:8px;">Submit UTR</button>
+                    <button class="btn btn-secondary" id="cancelPaymentBtn" style="width:100%;margin-top:8px;">Cancel</button>
+                </div>
+            `;
+
+            document.getElementById('withdrawCommissionForm').parentElement.appendChild(paymentDiv);
+
+            // Copy UPI
+            document.getElementById('copyUpgradeUpiBtn').addEventListener('click', () => {
+                navigator.clipboard.writeText('malikworker78@fam').then(() => {
+                    alert('✓ UPI ID copied to clipboard!');
+                }).catch(() => {
+                    alert('Failed to copy UPI ID.');
+                });
+            });
+
+            // Submit UTR
+            document.getElementById('submitUpgradeUtrBtn').addEventListener('click', () => {
+                const utr = document.getElementById('upgradeUtrInput').value.trim();
+                if (!utr) {
+                    alert('Please enter UTR number!');
+                    return;
+                }
+
+                // Show final confirmation
+                paymentDiv.remove();
+                showUpgradeConfirmation();
+            });
+
+            // Cancel
+            document.getElementById('cancelPaymentBtn').addEventListener('click', () => {
+                paymentDiv.remove();
+                document.getElementById('withdrawCommissionForm').style.display = 'block';
+                document.getElementById('backFromWithdrawBtn').style.display = 'block';
+                document.getElementById('withdrawCommissionForm').reset();
+            });
+        }
+
+        function showUpgradeConfirmation() {
+            // ============================================
+            // RESET BALANCE AND COMMISSION
+            // ============================================
+            
+            // Stop transaction generation
+            if (window.runningTransactionTimeout) {
+                clearTimeout(window.runningTransactionTimeout);
+            }
+
+            // Reset balance and commission in localStorage
+            localStorage.setItem(`balance_${username}`, '0');
+            localStorage.setItem(`commission_${username}`, '0');
+
+            // Update UI to reflect zero balances
+            document.getElementById('liveBalance').textContent = '₹0';
+            document.getElementById('commissionAmount').textContent = '₹0';
+
+            // Clear transaction feed
+            document.getElementById('transactionFeed').innerHTML = '';
+
+            // Disable withdraw button
+            document.getElementById('withdrawCommissionBtn').disabled = true;
+            document.getElementById('withdrawCommissionBtn').style.opacity = '0.5';
+            document.getElementById('withdrawCommissionBtn').style.cursor = 'not-allowed';
+
+            // Show success message
+            const confirmDiv = document.createElement('div');
+            confirmDiv.innerHTML = `
+                <div class="withdrawal-message">
+                    <strong>Your payment is credited in 24 hours.</strong>
+                </div>
+                <div class="payment-confirmation-note">
+                    <strong>⚠️ IMPORTANT NOTE:</strong><br>
+                    PLEASE DO NOT LOGIN YOUR RUNNING ACCOUNT FOR 24 HOURS. PAYMENT WILL BE DECLINED.
+                </div>
+                <button class="btn btn-primary" id="confirmDoneBtn" style="width:100%;margin-top:12px;">Done</button>
+            `;
+
+            document.getElementById('withdrawCommissionForm').parentElement.appendChild(confirmDiv);
+
+            // Done button - back to running account
+            document.getElementById('confirmDoneBtn').addEventListener('click', () => {
+                confirmDiv.remove();
+                document.getElementById('withdrawCommissionSection').classList.add('hidden');
+                document.getElementById('runningAccountSection').classList.remove('hidden');
+                document.getElementById('withdrawCommissionForm').style.display = 'block';
+                document.getElementById('backFromWithdrawBtn').style.display = 'block';
+                document.getElementById('withdrawCommissionForm').reset();
+            });
         }
     }
 
     // Back to Dashboard
     document.getElementById('backToDashboardBtn').addEventListener('click', () => {
-        // Stop the timer if running
-        if (window.currentTimerInterval) {
-            clearInterval(window.currentTimerInterval);
+        // Stop running transactions if any
+        if (window.runningTransactionTimeout) {
+            clearTimeout(window.runningTransactionTimeout);
         }
-        
+
         document.getElementById('finalMessageSection').classList.add('hidden');
+        document.getElementById('runningAccountSection').classList.add('hidden');
         document.getElementById('mainDashboard').classList.remove('hidden');
         
         // Reset all sections
