@@ -57,10 +57,10 @@ body {
 }
 
 .welcome-text {
-    font-size: 3.5rem;
+    font-size: 2.2rem;
     font-weight: 800;
     margin-bottom: 15px;
-    letter-spacing: 3px;
+    letter-spacing: 2px;
     text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -74,7 +74,8 @@ body {
 .tagline {
     font-size: 1.1rem;
     color: rgba(255, 255, 255, 0.85);
-    font-weight: 300;
+    font-weight: 600;
+    letter-spacing: 1px;
 }
 
 /* ============================================
@@ -186,6 +187,55 @@ body {
 }
 
 /* ============================================
+   TOGGLE SWITCH
+   ============================================ */
+
+.toggle-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.toggle-group label {
+    margin: 0;
+    flex: 1;
+}
+
+.toggle-switch {
+    position: relative;
+    width: 50px;
+    height: 28px;
+    background: var(--border-color);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.toggle-checkbox {
+    display: none;
+}
+
+.toggle-checkbox:checked + .toggle-slider {
+    background: var(--success-color);
+}
+
+.toggle-checkbox:checked + .toggle-slider::before {
+    transform: translateX(22px);
+}
+
+.toggle-slider {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 24px;
+    height: 24px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+}
+
+/* ============================================
    BUTTONS
    ============================================ */
 
@@ -215,7 +265,6 @@ body {
 .btn-secondary {
     background: var(--text-secondary);
     color: var(--dark-bg);
-    flex: 1;
 }
 
 .btn-secondary:hover {
@@ -360,44 +409,21 @@ body {
     font-weight: 600;
 }
 
-.payment-details {
+.upi-section {
     background: rgba(99, 102, 241, 0.05);
     border: 1px solid var(--primary-color);
-    padding: 15px;
+    padding: 20px;
     border-radius: 10px;
     margin-top: 15px;
-    transition: var(--transition);
-}
-
-.payment-details.hidden {
-    display: none;
-}
-
-.offer-description {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
     margin-bottom: 15px;
-}
-
-.payment-amount {
-    margin-top: 15px;
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--success-color);
-}
-
-.upi-section {
-    background: rgba(16, 185, 129, 0.05);
-    border: 1px solid var(--success-color);
-    padding: 20px;
-    border-radius: 12px;
-    margin: 20px 0;
+    transition: var(--transition);
 }
 
 .upi-label {
     color: var(--text-secondary);
     font-weight: 600;
     margin-bottom: 10px;
+    margin-top: 15px;
 }
 
 .upi-display {
@@ -410,51 +436,12 @@ body {
     margin-bottom: 15px;
 }
 
-#upiId {
+.upiId {
     flex: 1;
     color: var(--primary-color);
     font-weight: 600;
     font-size: 1.1rem;
     word-break: break-all;
-}
-
-.success-card {
-    text-align: center;
-    padding: 40px 25px;
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
-    border: 2px solid var(--success-color);
-}
-
-.success-card h3 {
-    color: var(--success-color);
-    font-size: 1.8rem;
-    margin-bottom: 15px;
-}
-
-#successMessage {
-    font-size: 1.2rem;
-    margin-bottom: 25px;
-    color: var(--text-primary);
-}
-
-.final-card {
-    text-align: center;
-    padding: 40px 25px;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1));
-    border: 2px solid var(--info-color);
-}
-
-.final-card h3 {
-    color: var(--info-color);
-    font-size: 1.8rem;
-    margin-bottom: 20px;
-}
-
-.final-message {
-    font-size: 1.1rem;
-    line-height: 1.6;
-    margin-bottom: 30px;
-    color: var(--text-primary);
 }
 
 /* ============================================
@@ -491,11 +478,7 @@ body {
     }
 
     .welcome-text {
-        font-size: 2.5rem;
-    }
-
-    .site-name {
-        font-size: 1.8rem;
+        font-size: 1.6rem;
     }
 
     .dashboard-header {
@@ -527,17 +510,12 @@ body {
     }
 
     .btn-secondary {
-        flex: none;
         width: 100%;
     }
 }
 
 @media (max-width: 480px) {
     .welcome-text {
-        font-size: 2rem;
-    }
-
-    .site-name {
         font-size: 1.4rem;
     }
 
@@ -631,69 +609,6 @@ body {
     margin: 12px 0;
 }
 
-/* Modal for withdraw/upgrade */
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-}
-
-.modal {
-    background: var(--card-bg);
-    padding: 20px;
-    border-radius: 12px;
-    width: 420px;
-    border: 1px solid var(--border-color);
-}
-
-.modal h4 {
-    color: var(--primary-color);
-    margin-bottom: 10px;
-}
-
-.modal .upi-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-.modal .utr-row {
-    margin-top: 12px;
-}
-
-@media (max-width: 768px) {
-    .running-main { flex-direction: column; }
-    .modal { width: 90%; }
-}
-
-/* Withdraw Commission Panel */
-#withdrawCommissionSection .form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-#withdrawCommissionSection .form-group input {
-    width: 100%;
-    padding: 10px 12px;
-    margin-bottom: 15px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background: rgba(15,23,42,0.6);
-    color: var(--text-primary);
-}
-
-#withdrawCommissionSection .form-group input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(99,102,241,0.1);
-}
-
 .withdrawal-message {
     margin: 15px 0;
     padding: 12px;
@@ -711,4 +626,93 @@ body {
     color: var(--warning-color);
     border: 1px solid var(--warning-color);
     font-weight: 600;
+}
+
+.receipt-panel {
+    margin-top: 20px;
+    padding: 20px;
+    background: rgba(15,23,42,0.6);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+}
+
+.receipt-panel h4 {
+    margin-bottom: 15px;
+    color: var(--text-primary);
+}
+
+.receipt-panel > div {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.receipt-panel > div:last-child {
+    border-bottom: none;
+}
+
+@media (max-width: 768px) {
+    .running-main {
+        flex-direction: column;
+    }
+}
+
+/* ============================================
+   TELEGRAM ICON STYLES
+   ============================================ */
+
+.telegram-icon {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border-radius: 50%;
+    color: white;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    transition: var(--transition);
+    z-index: 1000;
+}
+
+.telegram-icon:hover {
+    transform: scale(1.1);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.6);
+}
+
+.telegram-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+@media (max-width: 480px) {
+    .telegram-icon {
+        width: 40px;
+        height: 40px;
+        top: 10px;
+        right: 10px;
+    }
+
+    .telegram-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* ============================================
+   TOGGLE LOCKED STATE
+   ============================================ */
+
+.toggle-locked .toggle-checkbox {
+    cursor: not-allowed;
+}
+
+.toggle-locked .toggle-switch {
+    cursor: not-allowed;
+    opacity: 0.9;
 }

