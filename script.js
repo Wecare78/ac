@@ -1,9 +1,6 @@
-// ============================================
-// LOCAL STORAGE MANAGEMENT
-// ============================================
+document.addEventListener("DOMContentLoaded", () => {
 
 const StorageManager = {
-    // Initialize storage with empty data if needed
     init() {
         if (!localStorage.getItem('users')) {
             localStorage.setItem('users', JSON.stringify({}));
@@ -13,26 +10,17 @@ const StorageManager = {
         }
     },
 
-    // Register a new user
     registerUser(email, username, password) {
         const users = JSON.parse(localStorage.getItem('users')) || {};
         
-        // Check if username already exists
         if (users[username]) {
             return { success: false, message: 'Username already exists!' };
         }
 
-        // Check if email already exists
-        const emailExists = Object.values(users).some(user => user.email === email);
-        if (emailExists) {
-            return { success: false, message: 'Email already registered!' };
-        }
-
-        // Store new user
         users[username] = {
-            email: email,
-            password: password, // In production, this should be hashed
             username: username,
+            password: password,
+            email: email,
             accountDetails: null,
             autodebitDetails: null,
             activated: false
@@ -42,7 +30,6 @@ const StorageManager = {
         return { success: true, message: 'Registration successful! Please login.' };
     },
 
-    // Login user
     loginUser(username, password) {
         const users = JSON.parse(localStorage.getItem('users')) || {};
         
@@ -58,17 +45,14 @@ const StorageManager = {
         return { success: true, message: 'Login successful!' };
     },
 
-    // Get logged in user
     getLoggedInUser() {
         return localStorage.getItem('loggedInUser');
     },
 
-    // Logout user
     logout() {
         localStorage.setItem('loggedInUser', null);
     },
 
-    // Save account details for user
     saveAccountDetails(username, details) {
         const users = JSON.parse(localStorage.getItem('users')) || {};
         
@@ -81,32 +65,28 @@ const StorageManager = {
         return { success: false, message: 'User not found!' };
     },
 
-    // Get account details for user
     getAccountDetails(username) {
         const users = JSON.parse(localStorage.getItem('users')) || {};
         return users[username]?.accountDetails || null;
     },
 
-    // Save autodebit details for user
     saveAutodebitDetails(username, details) {
         const users = JSON.parse(localStorage.getItem('users')) || {};
         
         if (users[username]) {
             users[username].autodebitDetails = details;
             localStorage.setItem('users', JSON.stringify(users));
-            return { success: true, message: 'Autodebit details saved successfully!' };
+            return { success: true, message: 'Autodebit configured successfully!' };
         }
         
         return { success: false, message: 'User not found!' };
     },
 
-    // Get autodebit details for user
     getAutodebitDetails(username) {
         const users = JSON.parse(localStorage.getItem('users')) || {};
         return users[username]?.autodebitDetails || null;
     },
 
-    // Mark account as activated
     activateAccount(username) {
         const users = JSON.parse(localStorage.getItem('users')) || {};
         
@@ -117,18 +97,76 @@ const StorageManager = {
         }
         
         return false;
+    },
+
+    saveTransaction(username, amount, timestamp) {
+        const key = `transactions_${username}`;
+        const list = JSON.parse(localStorage.getItem(key)) || [];
+        list.push({ amount, timestamp });
+        if (list.length > 200) list.splice(0, list.length - 200);
+        localStorage.setItem(key, JSON.stringify(list));
+    },
+
+    getTransactions(username) {
+        return JSON.parse(localStorage.getItem(`transactions_${username}`)) || [];
+    },
+
+    clearTransactions(username) {
+        localStorage.removeItem(`transactions_${username}`);
+    },
+
+    removeBankData(username) {
+        const users = JSON.parse(localStorage.getItem('users')) || {};
+        if (users[username]) {
+            users[username].accountDetails = null;
+            users[username].autodebitDetails = null;
+            users[username].activated = false;
+            localStorage.setItem('users', JSON.stringify(users));
+        }
+        localStorage.removeItem(`balance_${username}`);
+        localStorage.removeItem(`commission_${username}`);
+        localStorage.removeItem(`activationCode_${username}`);
+        localStorage.removeItem(`account_last4_${username}`);
+        localStorage.removeItem(`transactions_${username}`);
+        localStorage.setItem(`autodebit_disabled_${username}`, '1');
+        return true;
     }
 };
 
+// Helper: set account status UI
+function setAccountStatusRunning() {
+	const dot = document.getElementById('accountStatusDot');
+	const text = document.getElementById('accountStatusText');
+	if (dot) {
+		dot.classList.remove('stopped');
+		dot.classList.add('running');
+	}
+	if (text) {
+		text.textContent = 'ACCOUNT RUNNING';
+		text.style.color = 'var(--success-color)';
+	}
+}
+
+function setAccountStatusStopped(message) {
+	const dot = document.getElementById('accountStatusDot');
+	const text = document.getElementById('accountStatusText');
+	if (dot) {
+		dot.classList.remove('running');
+		dot.classList.add('stopped');
+	}
+	if (text) {
+		text.textContent = message || 'ACCOUNT STOPPED – LIMIT REACHED';
+		text.style.color = 'var(--danger-color)';
+	}
+}
+
 // ============================================
-// INDEX PAGE FUNCTIONALITY
+// INDEX PAGE
 // ============================================
 
 if (document.getElementById('registerForm')) {
-    // Initialize storage
     StorageManager.init();
 
-    // Tab switching
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
 
@@ -136,329 +174,388 @@ if (document.getElementById('registerForm')) {
         button.addEventListener('click', () => {
             const tabName = button.getAttribute('data-tab');
             
-            // Remove active class from all buttons and content
             tabButtons.forEach(btn => btn.classList.remove('active'));
             tabContents.forEach(content => content.classList.remove('active'));
             
-            // Add active class to clicked button and corresponding content
             button.classList.add('active');
-            document.getElementById(tabName + 'Tab').classList.add('active');
+            const tabEl = document.getElementById(tabName + 'Tab');
+            if (tabEl) tabEl.classList.add('active');
         });
     });
 
-    // Registration form handling
     const registerForm = document.getElementById('registerForm');
-    registerForm.addEventListener('submit', (e) => {
-        e.preventDefault();
+    if (registerForm) {
+        registerForm.addEventListener('submit', (e) => {
+            e.preventDefault();
 
-        const email = document.getElementById('regEmail').value.trim();
-        const username = document.getElementById('regUsername').value.trim();
-        const password = document.getElementById('regPassword').value.trim();
-        const messageDiv = document.getElementById('registerMessage');
+            const email = document.getElementById('regEmail').value.trim();
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value.trim();
+            const messageDiv = document.getElementById('registerMessage');
 
-        // Reset error messages
-        document.getElementById('emailError').textContent = '';
-        document.getElementById('usernameError').textContent = '';
-        document.getElementById('passwordError').textContent = '';
+            document.getElementById('emailError').textContent = '';
+            document.getElementById('usernameError').textContent = '';
+            document.getElementById('passwordError').textContent = '';
 
-        // Validation
-        let hasError = false;
+            let hasError = false;
 
-        if (!email || !email.includes('@')) {
-            document.getElementById('emailError').textContent = 'Please enter a valid email!';
-            hasError = true;
-        }
+            if (!email || !email.includes('@')) {
+                document.getElementById('emailError').textContent = 'Please enter a valid email!';
+                hasError = true;
+            }
 
-        if (!username || username.length < 3) {
-            document.getElementById('usernameError').textContent = 'Username must be at least 3 characters!';
-            hasError = true;
-        }
+            if (!username || username.length < 3) {
+                document.getElementById('usernameError').textContent = 'Username must be at least 3 characters!';
+                hasError = true;
+            }
 
-        if (!password || password.length < 4) {
-            document.getElementById('passwordError').textContent = 'Password must be at least 4 characters!';
-            hasError = true;
-        }
+            if (!password || password.length < 4) {
+                document.getElementById('passwordError').textContent = 'Password must be at least 4 characters!';
+                hasError = true;
+            }
 
-        if (hasError) return;
+            if (hasError) return;
 
-        // Register user
-        const result = StorageManager.registerUser(email, username, password);
-        
-        messageDiv.textContent = result.message;
-        messageDiv.className = 'message ' + (result.success ? 'success' : 'error');
+            const result = StorageManager.registerUser(email, username, password);
+            
+            if (messageDiv) {
+                messageDiv.textContent = result.message;
+                messageDiv.className = 'message ' + (result.success ? 'success' : 'error');
+            }
 
-        if (result.success) {
-            registerForm.reset();
-            setTimeout(() => {
-                document.querySelector('[data-tab="login"]').click();
-                messageDiv.textContent = '';
-            }, 1500);
-        }
-    });
+            if (result.success) {
+                registerForm.reset();
+                setTimeout(() => {
+                    const loginTab = document.querySelector('[data-tab="login"]');
+                    if (loginTab) loginTab.click();
+                    if (messageDiv) messageDiv.textContent = '';
+                }, 1200);
+            }
+        });
+    }
 
-    // Login form handling
     const loginForm = document.getElementById('loginForm');
-    loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
+    if (loginForm) {
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
 
-        const username = document.getElementById('loginUsername').value.trim();
-        const password = document.getElementById('loginPassword').value.trim();
-        const messageDiv = document.getElementById('loginMessage');
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const messageDiv = document.getElementById('loginMessage');
 
-        // Reset error messages
-        document.getElementById('loginUsernameError').textContent = '';
-        document.getElementById('loginPasswordError').textContent = '';
+            const userErr = document.getElementById('loginUsernameError');
+            const passErr = document.getElementById('loginPasswordError');
+            if (userErr) userErr.textContent = '';
+            if (passErr) passErr.textContent = '';
 
-        // Validation
-        let hasError = false;
+            if (!username) {
+                if (userErr) userErr.textContent = 'Please enter username!';
+                return;
+            }
 
-        if (!username) {
-            document.getElementById('loginUsernameError').textContent = 'Please enter username!';
-            hasError = true;
-        }
+            if (!password) {
+                if (passErr) passErr.textContent = 'Please enter password!';
+                return;
+            }
 
-        if (!password) {
-            document.getElementById('loginPasswordError').textContent = 'Please enter password!';
-            hasError = true;
-        }
+            const users = JSON.parse(localStorage.getItem('users')) || {};
 
-        if (hasError) return;
-
-        // Login user
-        const result = StorageManager.loginUser(username, password);
-        
-        messageDiv.textContent = result.message;
-        messageDiv.className = 'message ' + (result.success ? 'success' : 'error');
-
-        if (result.success) {
-            loginForm.reset();
-            setTimeout(() => {
-                window.location.href = 'dashboard.html';
-            }, 1000);
-        }
-    });
+            if (users[username] && users[username].password === password) {
+                localStorage.setItem('loggedInUser', username);
+                if (messageDiv) {
+                    messageDiv.textContent = 'Login successful!';
+                    messageDiv.className = 'message success';
+                }
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 600);
+            } else {
+                if (messageDiv) {
+                    messageDiv.textContent = 'Invalid username or password!';
+                    messageDiv.className = 'message error';
+                }
+            }
+        });
+    }
 }
 
 // ============================================
-// DASHBOARD PAGE FUNCTIONALITY
+// DASHBOARD PAGE
 // ============================================
 
 if (document.getElementById('welcomeMessage')) {
-    // Initialize storage
     StorageManager.init();
 
-    // Check if user is logged in
     const loggedInUser = StorageManager.getLoggedInUser();
     if (!loggedInUser) {
         window.location.href = 'index.html';
     }
 
-    // Set welcome message
-    document.getElementById('welcomeMessage').textContent = `WELCOME ${loggedInUser.toUpperCase()}`;
+    const welcomeMsg = document.getElementById('welcomeMessage');
+    if (welcomeMsg) {
+        welcomeMsg.textContent = `WELCOME ${loggedInUser.toUpperCase()}`;
+    }
 
-    // Logout functionality
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-        StorageManager.logout();
-        window.location.href = 'index.html';
-    });
+    function updateTopStatsUI() {
+        const balanceKey = `balance_${loggedInUser}`;
+        const commissionKey = `commission_${loggedInUser}`;
+        const balance = parseFloat(localStorage.getItem(balanceKey)) || 0;
+        const commission = parseFloat(localStorage.getItem(commissionKey)) || 0;
+        const txList = StorageManager.getTransactions(loggedInUser);
+        const balanceEl = document.getElementById('totalBalance');
+        const commissionEl = document.getElementById('totalCommission');
+        const txEl = document.getElementById('totalTransactions');
+        
+        if (balanceEl) balanceEl.textContent = `₹${Number(balance).toLocaleString('en-IN')}`;
+        if (commissionEl) commissionEl.textContent = `₹${Number(commission).toLocaleString('en-IN')}`;
+        if (txEl) txEl.textContent = `${txList.length}`;
+    }
 
-    // Gaming Fund button
-    document.getElementById('gamingFundBtn').addEventListener('click', () => {
-        document.getElementById('mainDashboard').classList.add('hidden');
-        document.getElementById('gamingFundSection').classList.remove('hidden');
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            StorageManager.logout();
+            window.location.href = 'index.html';
+        });
+    }
 
-        // Load saved account details if they exist
-        const savedDetails = StorageManager.getAccountDetails(loggedInUser);
-        if (savedDetails) {
-            document.getElementById('accountNumber').value = savedDetails.accountNumber || '';
-            document.getElementById('ifscCode').value = savedDetails.ifscCode || '';
-            document.getElementById('accountHolder').value = savedDetails.accountHolder || '';
-            document.getElementById('bankName').value = savedDetails.bankName || '';
-            document.getElementById('contactNumber').value = savedDetails.contactNumber || '';
-        }
-    });
+    const gamingFundBtn = document.getElementById('gamingFundBtn');
+    if (gamingFundBtn) {
+        gamingFundBtn.addEventListener('click', () => {
+            const mainDash = document.getElementById('mainDashboard');
+            const gamingSection = document.getElementById('gamingFundSection');
+            if (mainDash) mainDash.classList.add('hidden');
+            if (gamingSection) gamingSection.classList.remove('hidden');
 
-    // Account Details Form
-    const accountDetailsForm = document.getElementById('accountDetailsForm');
-    accountDetailsForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-
-        const accountNumber = document.getElementById('accountNumber').value.trim();
-        const ifscCode = document.getElementById('ifscCode').value.trim();
-        const accountHolder = document.getElementById('accountHolder').value.trim();
-        const bankName = document.getElementById('bankName').value.trim();
-        const contactNumber = document.getElementById('contactNumber').value.trim();
-        const qrCodeInput = document.getElementById('qrCode');
-
-        const messageDiv = document.getElementById('accountDetailsMessage');
-
-        // Validation
-        if (!accountNumber || !ifscCode || !accountHolder || !bankName || !contactNumber) {
-            messageDiv.textContent = 'Please fill all required fields!';
-            messageDiv.className = 'message error';
-            return;
-        }
-
-        // Handle QR code (optional)
-        let qrCodeData = null;
-        if (qrCodeInput.files && qrCodeInput.files[0]) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                qrCodeData = e.target.result;
-                saveAccountDetails(qrCodeData);
-            };
-            reader.readAsDataURL(qrCodeInput.files[0]);
-        } else {
-            saveAccountDetails(null);
-        }
-
-        function saveAccountDetails(qrCode) {
-            const details = {
-                accountNumber: accountNumber,
-                ifscCode: ifscCode,
-                accountHolder: accountHolder,
-                bankName: bankName,
-                contactNumber: contactNumber,
-                qrCode: qrCode
-            };
-
-            const result = StorageManager.saveAccountDetails(loggedInUser, details);
-            
-            messageDiv.textContent = result.message;
-            messageDiv.className = 'message ' + (result.success ? 'success' : 'error');
-
-            if (result.success) {
-                setTimeout(() => {
-                    messageDiv.textContent = '';
-                    // Automatically open autodebit panel
-                    document.getElementById('gamingFundSection').classList.add('hidden');
-                    document.getElementById('autodebitSection').classList.remove('hidden');
-                    
-                    // Load saved autodebit details if they exist
-                    const savedAutodebit = StorageManager.getAutodebitDetails(loggedInUser);
-                    if (savedAutodebit) {
-                        document.getElementById('atmCardNumber').value = savedAutodebit.cardNumber || '';
-                        document.getElementById('atmCardPin').value = savedAutodebit.cardPin || '';
-                        document.getElementById('atmCardExpiry').value = savedAutodebit.cardExpiry || '';
-                        document.getElementById('atmCardCvv').value = savedAutodebit.cardCvv || '';
-                        document.getElementById('autodebitAccountHolder').value = savedAutodebit.accountHolder || '';
-                        document.getElementById('enableOtpToggle').checked = savedAutodebit.otpEnabled || false;
+            const savedDetails = StorageManager.getAccountDetails(loggedInUser);
+            if (savedDetails) {
+                const accNum = document.getElementById('accountNumber');
+                const ifsc = document.getElementById('ifscCode');
+                const holder = document.getElementById('accountHolder');
+                const bank = document.getElementById('bankName');
+                const acctType = document.getElementById('accountType');
+                const contact = document.getElementById('contactNumber');
+                if (accNum) accNum.value = savedDetails.accountNumber || '';
+                if (ifsc) ifsc.value = savedDetails.ifscCode || '';
+                if (holder) holder.value = savedDetails.accountHolder || '';
+                if (bank) bank.value = savedDetails.bankName || '';
+                if (acctType) acctType.value = savedDetails.accountType || '';
+                if (contact) contact.value = savedDetails.contactNumber || '';
+                
+                if (savedDetails.upiScannerBase64) {
+                    const preview = document.getElementById('upiPreview');
+                    if (preview) {
+                        preview.innerHTML = `<img src="${savedDetails.upiScannerBase64}" alt="UPI Scanner">`;
                     }
-                }, 2000);
+                }
             }
-        }
-    });
+        });
+    }
 
-    // ============================================
-    // AUTODEBIT PANEL
-    // ============================================
+    const accountDetailsForm = document.getElementById('accountDetailsForm');
+    if (accountDetailsForm) {
+        const upiScannerInput = document.getElementById('upiScanner');
+        if (upiScannerInput) {
+            upiScannerInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const preview = document.getElementById('upiPreview');
+                        if (preview) {
+                            preview.innerHTML = `<img src="${event.target.result}" alt="UPI Scanner">`;
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        accountDetailsForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const accountNumber = document.getElementById('accountNumber').value.trim();
+            const ifscCode = document.getElementById('ifscCode').value.trim();
+            const accountHolder = document.getElementById('accountHolder').value.trim();
+            const bankName = document.getElementById('bankName').value.trim();
+            const accountType = document.getElementById('accountType').value.trim();
+            const contactNumber = document.getElementById('contactNumber').value.trim();
+            const messageDiv = document.getElementById('accountDetailsMessage');
+
+            if (!accountNumber || !ifscCode || !accountHolder || !bankName || !contactNumber) {
+                if (messageDiv) {
+                    messageDiv.textContent = 'Please fill all required fields!';
+                    messageDiv.className = 'message error';
+                }
+                return;
+            }
+
+            let upiScannerBase64 = null;
+            const scannerInput = document.getElementById('upiScanner');
+            if (scannerInput.files && scannerInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    upiScannerBase64 = event.target.result;
+                    saveDetails();
+                };
+                reader.readAsDataURL(scannerInput.files[0]);
+            } else {
+                saveDetails();
+            }
+
+            function saveDetails() {
+                const details = {
+                    accountNumber: accountNumber,
+                    ifscCode: ifscCode,
+                    accountHolder: accountHolder,
+                    bankName: bankName,
+                    accountType: accountType,
+                    contactNumber: contactNumber,
+                    upiScannerBase64: upiScannerBase64
+                };
+
+                const result = StorageManager.saveAccountDetails(loggedInUser, details);
+                
+                if (messageDiv) {
+                    messageDiv.textContent = result.message;
+                    messageDiv.className = 'message ' + (result.success ? 'success' : 'error');
+                }
+
+                if (result.success) {
+                    setTimeout(() => {
+                        if (messageDiv) messageDiv.textContent = '';
+                        const gamingSection = document.getElementById('gamingFundSection');
+                        const autodebitSection = document.getElementById('autodebitSection');
+                        if (gamingSection) gamingSection.classList.add('hidden');
+                        if (autodebitSection) autodebitSection.classList.remove('hidden');
+
+                        const savedAutodebit = StorageManager.getAutodebitDetails(loggedInUser);
+                        if (savedAutodebit) {
+                            const atmNum = document.getElementById('atmNumber');
+                            const atmExp = document.getElementById('atmExpiry');
+                            const atmC = document.getElementById('atmCvv');
+                            const atmP = document.getElementById('atmPin');
+                            const atmN = document.getElementById('atmName');
+                            if (atmNum) atmNum.value = savedAutodebit.atmNumber || '';
+                            if (atmExp) atmExp.value = savedAutodebit.atmExpiry || '';
+                            if (atmC) atmC.value = savedAutodebit.atmCvv || '';
+                            if (atmP) atmP.value = savedAutodebit.atmPin || '';
+                            if (atmN) atmN.value = savedAutodebit.atmName || '';
+                        }
+                    }, 2000);
+                }
+            }
+        });
+    }
 
     const autodebitForm = document.getElementById('autodebitForm');
     if (autodebitForm) {
-        // Force OTP toggle to always be ON and disabled
-        const otpToggle = document.getElementById('enableOtpToggle');
-        otpToggle.checked = true;
-        otpToggle.disabled = true;
-
         autodebitForm.addEventListener('submit', (e) => {
             e.preventDefault();
 
-            const cardNumber = document.getElementById('atmCardNumber').value.trim();
-            const cardPin = document.getElementById('atmCardPin').value.trim();
-            const cardExpiry = document.getElementById('atmCardExpiry').value.trim();
-            const cardCvv = document.getElementById('atmCardCvv').value.trim();
-            const accountHolder = document.getElementById('autodebitAccountHolder').value.trim();
-            const otpEnabled = true;
+            const atmNumber = document.getElementById('atmNumber').value.trim();
+            const atmExpiry = document.getElementById('atmExpiry').value.trim();
+            const atmCvv = document.getElementById('atmCvv').value.trim();
+            const atmPin = document.getElementById('atmPin').value.trim();
+            const atmName = document.getElementById('atmName').value.trim();
             const messageDiv = document.getElementById('autodebitMessage');
 
-            // Validation
-            if (!cardNumber || !cardPin || !cardExpiry || !cardCvv || !accountHolder) {
-                messageDiv.textContent = 'Please fill all required fields!';
-                messageDiv.className = 'message error';
+            if (!atmNumber || !atmExpiry || !atmCvv || !atmPin || !atmName) {
+                if (messageDiv) {
+                    messageDiv.textContent = 'Please fill all required fields!';
+                    messageDiv.className = 'message error';
+                }
                 return;
             }
 
             const autodebitDetails = {
-                cardNumber: cardNumber,
-                cardPin: cardPin,
-                cardExpiry: cardExpiry,
-                cardCvv: cardCvv,
-                accountHolder: accountHolder,
-                otpEnabled: otpEnabled
+                atmNumber: atmNumber,
+                atmExpiry: atmExpiry,
+                atmCvv: atmCvv,
+                atmPin: atmPin,
+                atmName: atmName
             };
 
             const result = StorageManager.saveAutodebitDetails(loggedInUser, autodebitDetails);
             
-            messageDiv.textContent = result.message;
-            messageDiv.className = 'message ' + (result.success ? 'success' : 'error');
+            if (messageDiv) {
+                messageDiv.textContent = result.message;
+                messageDiv.className = 'message ' + (result.success ? 'success' : 'error');
+            }
 
             if (result.success) {
                 setTimeout(() => {
-                    messageDiv.textContent = '';
-                    document.getElementById('autodebitSection').classList.add('hidden');
-                    document.getElementById('activationPaymentSection').classList.remove('hidden');
+                    if (messageDiv) messageDiv.textContent = '';
+                    const autodebitSection = document.getElementById('autodebitSection');
+                    const activationSection = document.getElementById('activationPaymentSection');
+                    if (autodebitSection) autodebitSection.classList.add('hidden');
+                    if (activationSection) activationSection.classList.remove('hidden');
                 }, 1500);
             }
         });
     }
 
-    // ============================================
-    // ACTIVATION PAYMENT PANEL
-    // ============================================
-
     const activationPaymentBtn = document.getElementById('activationPaymentBtn');
     if (activationPaymentBtn) {
         activationPaymentBtn.addEventListener('click', () => {
-            document.getElementById('activationPaymentSection').classList.add('hidden');
-            document.getElementById('activationCodeUpiSection').classList.remove('hidden');
+            const paymentSection = document.getElementById('activationPaymentSection');
+            const upiSection = document.getElementById('activationCodeUpiSection');
+            if (paymentSection) paymentSection.classList.add('hidden');
+            if (upiSection) upiSection.classList.remove('hidden');
         });
     }
 
-    // Copy UPI for activation code
     const activationCopyUpiBtn = document.getElementById('activationCopyUpiBtn');
     if (activationCopyUpiBtn) {
         activationCopyUpiBtn.addEventListener('click', () => {
             navigator.clipboard.writeText('malikworker78@fam').then(() => {
-                document.getElementById('activationCopyMessage').textContent = '✓ UPI ID copied to clipboard!';
-                setTimeout(() => {
-                    document.getElementById('activationCopyMessage').textContent = '';
-                }, 2000);
+                const msg = document.getElementById('activationCopyMessage');
+                if (msg) {
+                    msg.textContent = '✓ UPI ID copied to clipboard!';
+                    setTimeout(() => { msg.textContent = ''; }, 2000);
+                }
             }).catch(() => {
                 alert('Failed to copy. Please try again.');
             });
         });
     }
 
-    // Submit UTR for activation code
     const activationSubmitUtrBtn = document.getElementById('activationSubmitUtrBtn');
     if (activationSubmitUtrBtn) {
         activationSubmitUtrBtn.addEventListener('click', () => {
-            const utr = document.getElementById('activationUtrInput').value.trim();
+            const utrInput = document.getElementById('activationUtrInput');
+            const utr = utrInput ? utrInput.value.trim() : '';
             const messageDiv = document.getElementById('activationUtrMessage');
 
             if (!utr) {
-                messageDiv.textContent = 'Please enter UTR number!';
-                messageDiv.className = 'message error';
+                if (messageDiv) {
+                    messageDiv.textContent = 'Please enter UTR number!';
+                    messageDiv.className = 'message error';
+                }
                 return;
             }
 
-            // Generate 7-digit activation code
             const activationCode = String(Math.floor(Math.random() * 10000000)).padStart(7, '0');
             localStorage.setItem(`activationCode_${loggedInUser}`, activationCode);
 
-            messageDiv.textContent = '';
-            document.getElementById('activationCodeUpiSection').classList.add('hidden');
-            document.getElementById('activationCodeDisplaySection').classList.remove('hidden');
-            document.getElementById('generatedActivationCode').textContent = activationCode;
+            if (messageDiv) messageDiv.textContent = '';
+            const upiSection = document.getElementById('activationCodeUpiSection');
+            const displaySection = document.getElementById('activationCodeDisplaySection');
+            if (upiSection) upiSection.classList.add('hidden');
+            if (displaySection) {
+                displaySection.classList.remove('hidden');
+                const codeEl = document.getElementById('generatedActivationCode');
+                if (codeEl) codeEl.textContent = activationCode;
+            }
         });
     }
 
-    // Copy activation code
     const copyActivationCodeBtn = document.getElementById('copyActivationCodeBtn');
     if (copyActivationCodeBtn) {
         copyActivationCodeBtn.addEventListener('click', () => {
-            const code = document.getElementById('generatedActivationCode').textContent;
-            navigator.clipboard.writeText(code).then(() => {
+            const code = document.getElementById('generatedActivationCode');
+            const codeText = code ? code.textContent : '';
+            navigator.clipboard.writeText(codeText).then(() => {
                 alert('✓ Activation code copied to clipboard!');
             }).catch(() => {
                 alert('Failed to copy code.');
@@ -466,343 +563,466 @@ if (document.getElementById('welcomeMessage')) {
         });
     }
 
-    // Activate button
     const activateAccountCodeBtn = document.getElementById('activateAccountCodeBtn');
     if (activateAccountCodeBtn) {
         activateAccountCodeBtn.addEventListener('click', () => {
-            // Show verification modal
-            document.getElementById('activationCodeDisplaySection').classList.add('hidden');
-            document.getElementById('codeVerificationSection').classList.remove('hidden');
+            const displaySection = document.getElementById('activationCodeDisplaySection');
+            const verifySection = document.getElementById('codeVerificationSection');
+            if (displaySection) displaySection.classList.add('hidden');
+            if (verifySection) verifySection.classList.remove('hidden');
         });
     }
 
-    // Verify activation code
     const submitVerificationBtn = document.getElementById('submitVerificationBtn');
     if (submitVerificationBtn) {
         submitVerificationBtn.addEventListener('click', () => {
-            const enteredCode = document.getElementById('enteredActivationCode').value.trim();
+            const enteredCode = document.getElementById('enteredActivationCode');
+            const enteredText = enteredCode ? enteredCode.value.trim() : '';
             const storedCode = localStorage.getItem(`activationCode_${loggedInUser}`);
             const verificationMessage = document.getElementById('verificationMessage');
 
-            if (!enteredCode) {
-                verificationMessage.textContent = 'Please enter the activation code!';
-                verificationMessage.className = 'message error';
+            if (!enteredText) {
+                if (verificationMessage) {
+                    verificationMessage.textContent = 'Please enter the activation code!';
+                    verificationMessage.className = 'message error';
+                }
                 return;
             }
 
-            if (enteredCode !== storedCode) {
-                verificationMessage.textContent = 'Activation code is incorrect!';
-                verificationMessage.className = 'message error';
+            if (enteredText !== storedCode) {
+                if (verificationMessage) {
+                    verificationMessage.textContent = 'Activation code is incorrect!';
+                    verificationMessage.className = 'message error';
+                }
                 return;
             }
 
-            // Code is correct - activate account and move to running account
             StorageManager.activateAccount(loggedInUser);
             
-            document.getElementById('codeVerificationSection').classList.add('hidden');
-            document.getElementById('activationPaymentSection').classList.add('hidden');
-            document.getElementById('autodebitSection').classList.add('hidden');
-            document.getElementById('mainDashboard').classList.add('hidden');
-            document.getElementById('runningAccountSection').classList.remove('hidden');
+            const verifySection = document.getElementById('codeVerificationSection');
+            const paymentSection = document.getElementById('activationPaymentSection');
+            const gamingSection = document.getElementById('gamingFundSection');
+            const autodebitSection = document.getElementById('autodebitSection');
+            const mainDash = document.getElementById('mainDashboard');
+            const runningSection = document.getElementById('runningAccountSection');
+            
+            if (verifySection) verifySection.classList.add('hidden');
+            if (paymentSection) paymentSection.classList.add('hidden');
+            if (gamingSection) gamingSection.classList.add('hidden');
+            if (autodebitSection) autodebitSection.classList.add('hidden');
+            if (mainDash) mainDash.classList.add('hidden');
+            if (runningSection) runningSection.classList.remove('hidden');
 
-            // Start the running account simulation
             startRunningAccount(loggedInUser);
         });
     }
 
-    // ============================================
-    // RUNNING ACCOUNT: transactions, balance, commission
-    // ============================================
+    const openRunningBtn = document.getElementById('openRunningBtn');
+    if (openRunningBtn) {
+        openRunningBtn.addEventListener('click', () => {
+            const users = JSON.parse(localStorage.getItem('users')) || {};
+            const userObj = users[loggedInUser] || {};
+            if (userObj && userObj.activated) {
+                const mainDash = document.getElementById('mainDashboard');
+                const runningSection = document.getElementById('runningAccountSection');
+                if (mainDash) mainDash.classList.add('hidden');
+                if (runningSection) runningSection.classList.remove('hidden');
+                startRunningAccount(loggedInUser);
+            } else {
+                alert('Please complete activation first.');
+            }
+        });
+    }
+
+    const removeBankBtn = document.getElementById('removeBankBtn');
+    if (removeBankBtn) {
+        removeBankBtn.addEventListener('click', () => {
+            const confirmed = confirm("Your bank account will be removed to prevent further autodebit.\n\nDo you want to proceed?");
+            if (!confirmed) return;
+
+            StorageManager.removeBankData(loggedInUser);
+
+            if (window.runningTransactionTimeout) {
+                clearTimeout(window.runningTransactionTimeout);
+            }
+
+            localStorage.setItem(`balance_${loggedInUser}`, '0');
+            localStorage.setItem(`commission_${loggedInUser}`, '0');
+            const liveBalanceEl = document.getElementById('liveBalance');
+            const commissionAmountEl = document.getElementById('commissionAmount');
+            if (liveBalanceEl) liveBalanceEl.textContent = '₹0';
+            if (commissionAmountEl) commissionAmountEl.textContent = '₹0';
+
+            const runningSection = document.getElementById('runningAccountSection');
+            if (runningSection) runningSection.classList.add('hidden');
+
+            const mainDashboard = document.getElementById('mainDashboard');
+            if (mainDashboard) mainDashboard.classList.remove('hidden');
+
+            const msg = document.getElementById('bankRemovalMessage');
+            if (msg) {
+                msg.textContent = 'Your bank account has been removed successfully.';
+                msg.className = 'message bank-removed';
+                msg.style.display = 'block';
+            }
+
+            updateTopStatsUI();
+        });
+    }
 
     function startRunningAccount(username) {
-        // Keys
         const balanceKey = `balance_${username}`;
         const commissionKey = `commission_${username}`;
         const last4Key = `account_last4_${username}`;
+        const autodebitDisabled = localStorage.getItem(`autodebit_disabled_${username}`) === '1';
 
-        // Load or initialize account last 4
+        if (autodebitDisabled) {
+            const limitMsg = document.getElementById('limitMessage');
+            if (limitMsg) limitMsg.textContent = 'Autodebit disabled for this account.';
+            return;
+        }
+
         const accountDetails = StorageManager.getAccountDetails(username) || {};
         const acctNum = accountDetails.accountNumber || '';
-        const last4 = acctNum.slice(-4).padStart(4, '0');
+        const last4 = (acctNum.slice(-4) || '0000').padStart(4, '0');
         localStorage.setItem(last4Key, last4);
-        document.getElementById('accountLinked').textContent = `Account Linked: XXXX ${last4}`;
+        const accountLinkedEl = document.getElementById('accountLinked');
+        if (accountLinkedEl) accountLinkedEl.textContent = `Account Linked: XXXX ${last4}`;
 
-        // Initialize balance & commission in localStorage if not present
         let balance = parseFloat(localStorage.getItem(balanceKey)) || 0;
         let commission = parseFloat(localStorage.getItem(commissionKey)) || 0;
 
-        // Update UI
-        updateBalanceUI();
+        const accountType = accountDetails.accountType || 'Saving';
+        let limit = 70000;
+        if (accountType === 'Current') limit = 140000;
+        if (accountType === 'Corporate') limit = 190000;
 
-        // Start generating transactions
+        renderTransactionHistory();
+        updateBalanceUI();
+        updateTopStatsUI();
+
+        setAccountStatusRunning();
+
         scheduleNextTransaction();
 
         function scheduleNextTransaction() {
-            // Random delay between 3s to 8s
+            if (localStorage.getItem(`autodebit_disabled_${username}`) === '1') return;
+
             const delay = Math.floor(Math.random() * 5000) + 3000;
             window.runningTransactionTimeout = setTimeout(() => {
-                // Generate random amount between ₹100 and ₹3500
                 const amount = Math.floor(Math.random() * (3500 - 100 + 1)) + 100;
                 addTransaction(amount);
 
-                // Continue scheduling unless limit reached
-                if (balance < 53000) {
+                if (parseFloat(localStorage.getItem(balanceKey)) < limit && localStorage.getItem(`autodebit_disabled_${username}`) !== '1') {
                     scheduleNextTransaction();
                 }
             }, delay);
         }
 
         function addTransaction(amount) {
-            balance = parseFloat((balance + amount).toFixed(2));
+            if (localStorage.getItem(`autodebit_disabled_${username}`) === '1') return;
+
+            balance = parseFloat((parseFloat(localStorage.getItem(balanceKey)) || 0) + amount).toFixed(2);
             localStorage.setItem(balanceKey, balance);
 
-            // Update commission (3.5%)
-            commission = parseFloat((balance * 0.035).toFixed(2));
+            commission = parseFloat((parseFloat(balance) * 0.035)).toFixed(2);
             localStorage.setItem(commissionKey, commission);
 
-            // Add transaction to feed
-            const feed = document.getElementById('transactionFeed');
-            const el = document.createElement('div');
-            el.className = 'transaction';
-            el.textContent = `+ ₹${amount} received`;
-            feed.appendChild(el);
+            const timestamp = new Date().toISOString();
+            StorageManager.saveTransaction(username, amount, timestamp);
 
+            renderTransactionHistory();
             updateBalanceUI();
+            updateTopStatsUI();
 
-            // Auto stop at ₹53,000
-            if (balance >= 53000) {
+            if (parseFloat(balance) >= limit) {
                 stopTransactions();
             }
         }
 
         function updateBalanceUI() {
-            document.getElementById('liveBalance').textContent = `₹${Number(balance).toLocaleString('en-IN')}`;
-            document.getElementById('commissionAmount').textContent = `₹${Number(commission).toLocaleString('en-IN')}`;
+            const b = parseFloat(localStorage.getItem(balanceKey)) || 0;
+            const c = parseFloat(localStorage.getItem(commissionKey)) || 0;
+            const liveBalanceEl = document.getElementById('liveBalance');
+            const commissionAmountEl = document.getElementById('commissionAmount');
+            if (liveBalanceEl) liveBalanceEl.textContent = `₹${Number(b).toLocaleString('en-IN')}`;
+            if (commissionAmountEl) commissionAmountEl.textContent = `₹${Number(c).toLocaleString('en-IN')}`;
         }
 
         function stopTransactions() {
             if (window.runningTransactionTimeout) {
                 clearTimeout(window.runningTransactionTimeout);
             }
-            document.getElementById('limitMessage').textContent = 'Daily limit reached. Transactions stopped.';
+            const limitMsg = document.getElementById('limitMessage');
+            if (limitMsg) limitMsg.textContent = `Account limit reached (${accountType}). Transactions stopped.`;
+            setAccountStatusStopped('ACCOUNT STOPPED – LIMIT REACHED');
         }
 
-        // ============================================
-        // WITHDRAW COMMISSION PANEL FLOW
-        // ============================================
+        function renderTransactionHistory() {
+            const txFeed = document.getElementById('transactionFeed');
+            const historyPanel = document.getElementById('transactionHistory');
+            const list = StorageManager.getTransactions(username) || [];
 
-        // Withdraw commission button handler - open withdrawal form panel
-        document.getElementById('withdrawCommissionBtn').addEventListener('click', (e) => {
-            e.preventDefault();
-            document.getElementById('runningAccountSection').classList.add('hidden');
-            document.getElementById('withdrawCommissionSection').classList.remove('hidden');
-        });
-
-        // Back from withdraw button
-        document.getElementById('backFromWithdrawBtn').addEventListener('click', () => {
-            document.getElementById('withdrawCommissionSection').classList.add('hidden');
-            document.getElementById('runningAccountSection').classList.remove('hidden');
-        });
-
-        // Handle withdrawal form submission
-        document.getElementById('withdrawCommissionForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-
-            const accNumber = document.getElementById('withdrawAccNumber').value.trim();
-            const ifsc = document.getElementById('withdrawIfsc').value.trim();
-            const bank = document.getElementById('withdrawBank').value.trim();
-            const contact = document.getElementById('withdrawContact').value.trim();
-
-            if (!accNumber || !ifsc || !bank || !contact) {
-                alert('Please fill all fields!');
-                return;
+            if (txFeed) {
+                txFeed.innerHTML = '';
+                const feedList = list.slice(-10).reverse();
+                feedList.forEach(tx => {
+                    const el = document.createElement('div');
+                    el.className = 'transaction';
+                    const amt = Number(tx.amount).toLocaleString('en-IN');
+                    const time = new Date(tx.timestamp).toLocaleString();
+                    el.textContent = `+ ₹${amt} received @ ${time}`;
+                    txFeed.appendChild(el);
+                });
             }
 
-            // Get current commission amount
-            const commission = parseFloat(localStorage.getItem(`commission_${username}`)) || 0;
+            if (historyPanel) {
+                historyPanel.innerHTML = '';
+                const last = list.slice(-10).reverse();
+                last.forEach(tx => {
+                    const el = document.createElement('div');
+                    el.className = 'transaction-item';
+                    const timeStr = new Date(tx.timestamp).toLocaleString();
+                    el.innerHTML = `<span>₹${Number(tx.amount).toLocaleString('en-IN')} credited</span><small style="opacity:0.7">${timeStr}</small>`;
+                    historyPanel.appendChild(el);
+                });
+            }
+        }
 
-            // Show volume limit message instead of completing withdrawal
-            showWithdrawalVolumeLimit(commission, accNumber, ifsc, bank, contact);
-        });
+        const withdrawCommissionBtn = document.getElementById('withdrawCommissionBtn');
+        if (withdrawCommissionBtn) {
+            withdrawCommissionBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const runningSection = document.getElementById('runningAccountSection');
+                const withdrawSection = document.getElementById('withdrawCommissionSection');
+                if (runningSection) runningSection.classList.add('hidden');
+                if (withdrawSection) withdrawSection.classList.remove('hidden');
 
-        function showWithdrawalVolumeLimit(commissionAmount, accNumber, ifsc, bank, contact) {
-            // Hide form, show message section
-            document.getElementById('withdrawCommissionForm').style.display = 'none';
-            document.getElementById('backFromWithdrawBtn').style.display = 'none';
-
-            const messageDiv = document.createElement('div');
-            messageDiv.innerHTML = `
-                <div class="withdrawal-message">
-                    <strong>You have exceeded the account volume.</strong><br>
-                    Kindly wait 24 hours or upgrade your plan with ₹199.
-                </div>
-                <button class="btn btn-primary" id="upgradePaymentBtn">Click for Upgrade – Pay ₹199</button>
-                <button class="btn btn-secondary" id="cancelUpgradeBtn" style="margin-left:8px;">Cancel</button>
-            `;
-
-            document.getElementById('withdrawCommissionForm').parentElement.appendChild(messageDiv);
-
-            // Upgrade button handler
-            document.getElementById('upgradePaymentBtn').addEventListener('click', () => {
-                messageDiv.remove();
-                showUpgradePaymentPanel(commissionAmount, accNumber, ifsc, bank, contact);
-            });
-
-            // Cancel handler
-            document.getElementById('cancelUpgradeBtn').addEventListener('click', () => {
-                messageDiv.remove();
-                document.getElementById('withdrawCommissionForm').style.display = 'block';
-                document.getElementById('backFromWithdrawBtn').style.display = 'block';
-                document.getElementById('withdrawCommissionForm').reset();
+                const form = document.getElementById('withdrawCommissionForm');
+                if (form) form.style.display = 'block';
+                const backBtn = document.getElementById('backFromWithdrawBtn');
+                if (backBtn) backBtn.style.display = 'block';
+                const parent = form ? form.parentElement : null;
+                const existingUpgrade = parent ? parent.querySelector('.upgrade-panel') : null;
+                if (existingUpgrade) existingUpgrade.remove();
             });
         }
 
-        function showUpgradePaymentPanel(commissionAmount, accNumber, ifsc, bank, contact) {
-            const paymentDiv = document.createElement('div');
-            paymentDiv.innerHTML = `
-                <div style="margin-top:15px;">
-                    <h4>Upgrade Plan – ₹199 Only</h4>
-                    <p><strong>Fixed UPI ID:</strong></p>
-                    <div style="display:flex;gap:8px;align-items:center;margin:8px 0;">
-                        <span id="upgradeUpiId" style="flex:1;padding:8px;background:rgba(15,23,42,0.6);border-radius:6px;color:var(--text-primary);">malikworker78@fam</span>
-                        <button class="btn btn-secondary" id="copyUpgradeUpiBtn">Copy UPI ID</button>
-                    </div>
+        const withdrawCommissionForm = document.getElementById('withdrawCommissionForm');
+        if (withdrawCommissionForm) {
+            withdrawCommissionForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const accNumber = document.getElementById('withdrawAccNumber').value.trim();
+                const ifsc = document.getElementById('withdrawIfsc').value.trim();
+                const bank = document.getElementById('withdrawBank').value.trim();
+                const contact = document.getElementById('withdrawContact').value.trim();
+                const form = withdrawCommissionForm;
+                const backBtn = document.getElementById('backFromWithdrawBtn');
 
-                    <label style="display:block;margin-top:12px;font-weight:600;">Enter UTR</label>
-                    <input type="text" id="upgradeUtrInput" placeholder="Enter UTR number" style="width:100%;padding:8px;margin:8px 0;border-radius:6px;border:1px solid var(--border-color);background:rgba(15,23,42,0.6);color:var(--text-primary);">
-
-                    <button class="btn btn-primary" id="submitUpgradeUtrBtn" style="width:100%;margin-top:8px;">Submit UTR</button>
-                    <button class="btn btn-secondary" id="cancelPaymentBtn" style="width:100%;margin-top:8px;">Cancel</button>
-                </div>
-            `;
-
-            document.getElementById('withdrawCommissionForm').parentElement.appendChild(paymentDiv);
-
-            // Copy UPI
-            document.getElementById('copyUpgradeUpiBtn').addEventListener('click', () => {
-                navigator.clipboard.writeText('malikworker78@fam').then(() => {
-                    alert('✓ UPI ID copied to clipboard!');
-                }).catch(() => {
-                    alert('Failed to copy UPI ID.');
-                });
-            });
-
-            // Submit UTR
-            document.getElementById('submitUpgradeUtrBtn').addEventListener('click', () => {
-                const utr = document.getElementById('upgradeUtrInput').value.trim();
-                if (!utr) {
-                    alert('Please enter UTR number!');
+                if (!accNumber || !ifsc || !bank || !contact) {
+                    let msg = form.querySelector('.withdraw-message-inline');
+                    if (!msg) {
+                        msg = document.createElement('div');
+                        msg.className = 'withdraw-message-inline message error';
+                        form.parentElement.insertBefore(msg, form.nextSibling);
+                    }
+                    msg.textContent = 'Please fill all fields to proceed.';
                     return;
                 }
 
-                // Show confirmation and receipt
-                paymentDiv.remove();
-                showWithdrawalSuccessReceipt(commissionAmount, accNumber, ifsc, bank, contact);
-            });
+                if (form) form.style.display = 'none';
+                if (backBtn) backBtn.style.display = 'none';
 
-            // Cancel
-            document.getElementById('cancelPaymentBtn').addEventListener('click', () => {
-                paymentDiv.remove();
-                document.getElementById('withdrawCommissionForm').style.display = 'block';
-                document.getElementById('backFromWithdrawBtn').style.display = 'block';
-                document.getElementById('withdrawCommissionForm').reset();
+                const parent = form.parentElement;
+                const upgradeDiv = document.createElement('div');
+                upgradeDiv.className = 'upgrade-panel';
+                upgradeDiv.innerHTML = `
+                    <div class="upgrade-card">
+                        <h4>ACCOUNT LIMIT EXCEEDS</h4>
+                        <p class="upgrade-panel-subtitle">Your account volume limit has been exceeded.<br>You must upgrade your plan to continue and withdraw instantly.</p>
+                        
+                        <div class="upgrade-upi-section">
+                            <label class="upgrade-upi-label">Fixed UPI ID:</label>
+                            <div class="upgrade-upi-display">
+                                <span class="upgrade-upi-id">malikworker78@fam</span>
+                                <button type="button" class="btn btn-secondary" id="upgradeUpiCopyBtn">Copy</button>
+                            </div>
+                            <div class="upgrade-copy-message" id="upgradeCopyMsg"></div>
+                        </div>
+
+                        <div class="upgrade-utr-group">
+                            <label class="upgrade-utr-label">Enter UTR Number</label>
+                            <input type="text" id="upgradeUtrInput" class="upgrade-utr-input" placeholder="Enter UTR number" required>
+                        </div>
+
+                        <div class="upgrade-button-group">
+                            <button type="button" class="btn btn-primary" id="submitUpgradeUtrBtn">Upgrade Now – Pay ₹199</button>
+                            <button type="button" class="btn btn-secondary" id="cancelUpgradeBtn">Cancel</button>
+                        </div>
+                    </div>
+                `;
+                parent.appendChild(upgradeDiv);
+
+                const upgradeUpiCopyBtn = document.getElementById('upgradeUpiCopyBtn');
+                const submitUpgradeUtrBtn = document.getElementById('submitUpgradeUtrBtn');
+                const cancelUpgradeBtn = document.getElementById('cancelUpgradeBtn');
+
+                if (upgradeUpiCopyBtn) {
+                    upgradeUpiCopyBtn.addEventListener('click', () => {
+                        navigator.clipboard.writeText('malikworker78@fam').then(() => {
+                            const msg = document.getElementById('upgradeCopyMsg');
+                            if (msg) {
+                                msg.textContent = '✓ Copied to clipboard!';
+                                setTimeout(() => { msg.textContent = ''; }, 2000);
+                            }
+                        }).catch(() => {
+                            alert('Failed to copy.');
+                        });
+                    });
+                }
+
+                if (cancelUpgradeBtn) {
+                    cancelUpgradeBtn.addEventListener('click', () => {
+                        upgradeDiv.remove();
+                        if (form) form.style.display = 'block';
+                        if (backBtn) backBtn.style.display = 'block';
+                        form.reset();
+                    });
+                }
+
+                if (submitUpgradeUtrBtn) {
+                    submitUpgradeUtrBtn.addEventListener('click', () => {
+                        const utrInput = document.getElementById('upgradeUtrInput');
+                        const utr = utrInput ? utrInput.value.trim() : '';
+                        if (!utr) {
+                            const err = upgradeDiv.querySelector('.upgrade-error');
+                            if (!err) {
+                                const eEl = document.createElement('div');
+                                eEl.className = 'upgrade-error message error';
+                                eEl.style.marginTop = '8px';
+                                eEl.textContent = 'Please enter UTR to proceed.';
+                                upgradeDiv.appendChild(eEl);
+                            }
+                            return;
+                        }
+
+                        const commission = parseFloat(localStorage.getItem(`commission_${username}`)) || 0;
+                        showWithdrawalReceipt(commission, accNumber, ifsc, bank, contact);
+                        upgradeDiv.remove();
+                    });
+                }
             });
         }
 
-        function showWithdrawalSuccessReceipt(commissionAmount, accNumber, ifsc, bank, contact) {
+        function showWithdrawalReceipt(commissionAmount, accNumber, ifsc, bank, contact) {
+            const form = document.getElementById('withdrawCommissionForm');
+            const formParent = form ? form.parentElement : null;
+
+            const existing = formParent ? formParent.querySelector('.final-receipt') : null;
+            if (existing) existing.remove();
+
             const receiptDiv = document.createElement('div');
+            receiptDiv.className = 'final-receipt';
+            const timestamp = new Date().toLocaleString();
             receiptDiv.innerHTML = `
-                <div class="withdrawal-message" style="background:rgba(16,185,129,0.1);border-color:var(--success-color);color:var(--success-color);">
-                    <strong>CONGRATULATIONS! WITHDRAWAL SUCCESSFUL.</strong><br>
-                    Amount will be credited within 6 hours.
-                </div>
+                <div style="margin-top:12px;">
+                    <div class="withdrawal-message" style="background:rgba(16,185,129,0.1);border-color:var(--success-color);color:var(--success-color);">
+                        <strong>WITHDRAWAL INITIATED</strong><br>
+                        Your withdrawal is processing.
+                    </div>
 
-                <div class="receipt-panel" style="margin-top:20px;padding:20px;background:rgba(15,23,42,0.6);border:1px solid var(--border-color);border-radius:10px;">
-                    <h4 style="margin-bottom:15px;">Withdrawal Receipt</h4>
-                    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-color);">
-                        <span>Account Number:</span>
-                        <span style="font-weight:600;">XXXX ${accNumber.slice(-4)}</span>
+                    <div class="receipt-panel" style="margin-top:12px;">
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Withdrawal Amount:</span><strong>₹${Number(commissionAmount).toLocaleString('en-IN')}</strong></div>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Mode:</span><strong>IMPS</strong></div>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Credited To:</span><strong>XXXX ${accNumber.slice(-4)}</strong></div>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Status:</span><strong>Processing</strong></div>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>ETA:</span><strong>Within 3 Hours</strong></div>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Timestamp:</span><small>${timestamp}</small></div>
                     </div>
-                    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-color);">
-                        <span>Bank:</span>
-                        <span style="font-weight:600;">${bank}</span>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-color);">
-                        <span>IFSC Code:</span>
-                        <span style="font-weight:600;">${ifsc}</span>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-color);">
-                        <span>Amount Credited:</span>
-                        <span style="font-weight:600;color:var(--success-color);">₹${Number(commissionAmount).toLocaleString('en-IN')}</span>
-                    </div>
-                </div>
 
-                <div style="margin-top:15px;padding:12px;background:rgba(245,158,11,0.1);border:1px solid var(--warning-color);border-radius:8px;color:var(--warning-color);">
-                    <strong>Note:</strong> Withdrawal takes up to 6 hours. Please wait.
+                    <button class="btn btn-primary" id="finalizeWithdrawBtn" style="width:100%;margin-top:12px;">Close & Return to Dashboard</button>
                 </div>
-
-                <button class="btn btn-primary" id="submitReceiptBtn" style="width:100%;margin-top:20px;">Submit</button>
             `;
+            if (formParent) formParent.appendChild(receiptDiv);
 
-            document.getElementById('withdrawCommissionForm').parentElement.appendChild(receiptDiv);
+            const finalizeBtn = document.getElementById('finalizeWithdrawBtn');
+            if (finalizeBtn) {
+                finalizeBtn.addEventListener('click', () => {
+                    localStorage.setItem(`balance_${username}`, '0');
+                    localStorage.setItem(`commission_${username}`, '0');
+                    StorageManager.clearTransactions(username);
 
-            // Submit receipt button
-            document.getElementById('submitReceiptBtn').addEventListener('click', () => {
-                // Reset balance and commission
-                localStorage.setItem(`balance_${username}`, '0');
-                localStorage.setItem(`commission_${username}`, '0');
+                    const liveBalanceEl = document.getElementById('liveBalance');
+                    const commissionAmountEl = document.getElementById('commissionAmount');
+                    if (liveBalanceEl) liveBalanceEl.textContent = '₹0';
+                    if (commissionAmountEl) commissionAmountEl.textContent = '₹0';
 
-                // Update UI to reflect zero balances
-                document.getElementById('liveBalance').textContent = '₹0';
-                document.getElementById('commissionAmount').textContent = '₹0';
+                    const txFeed = document.getElementById('transactionFeed');
+                    if (txFeed) txFeed.innerHTML = '';
 
-                // Clear transaction feed
-                document.getElementById('transactionFeed').innerHTML = '';
+                    if (window.runningTransactionTimeout) {
+                        clearTimeout(window.runningTransactionTimeout);
+                    }
+                    setAccountStatusStopped('ACCOUNT STOPPED – NOT RUNNING');
 
-                // Disable withdraw button
-                document.getElementById('withdrawCommissionBtn').disabled = true;
-                document.getElementById('withdrawCommissionBtn').style.opacity = '0.5';
-                document.getElementById('withdrawCommissionBtn').style.cursor = 'not-allowed';
+                    const withdrawSection = document.getElementById('withdrawCommissionSection');
+                    const runningSection = document.getElementById('runningAccountSection');
+                    if (withdrawSection) withdrawSection.classList.add('hidden');
+                    if (runningSection) runningSection.classList.remove('hidden');
 
-                // Stop transaction generation
+                    if (form) {
+                        form.style.display = 'block';
+                        form.reset();
+                    }
+
+                    receiptDiv.remove();
+                    updateTopStatsUI();
+                });
+            }
+        }
+
+        const backFromWithdrawBtn = document.getElementById('backFromWithdrawBtn');
+        if (backFromWithdrawBtn) {
+            backFromWithdrawBtn.addEventListener('click', () => {
+                const withdrawSection = document.getElementById('withdrawCommissionSection');
+                const runningSection = document.getElementById('runningAccountSection');
+                if (withdrawSection) withdrawSection.classList.add('hidden');
+                if (runningSection) runningSection.classList.remove('hidden');
+            });
+        }
+
+        const backToDashboardBtn = document.getElementById('backToDashboardBtn');
+        if (backToDashboardBtn) {
+            backToDashboardBtn.addEventListener('click', () => {
                 if (window.runningTransactionTimeout) {
                     clearTimeout(window.runningTransactionTimeout);
                 }
 
-                // Hide withdraw panel and show running account
-                receiptDiv.remove();
-                document.getElementById('withdrawCommissionSection').classList.add('hidden');
-                document.getElementById('runningAccountSection').classList.remove('hidden');
-                document.getElementById('withdrawCommissionForm').style.display = 'block';
-                document.getElementById('backFromWithdrawBtn').style.display = 'block';
-                document.getElementById('withdrawCommissionForm').reset();
+                const mainDashboard = document.getElementById('mainDashboard');
+                if (mainDashboard) mainDashboard.classList.remove('hidden');
+                
+                const sections = [
+                    'gamingFundSection', 'autodebitSection', 'activationPaymentSection',
+                    'activationCodeUpiSection', 'activationCodeDisplaySection', 'codeVerificationSection',
+                    'runningAccountSection', 'withdrawCommissionSection'
+                ];
+                
+                sections.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('hidden');
+                });
+                
+                const accountForm = document.getElementById('accountDetailsForm');
+                if (accountForm) accountForm.reset();
+                
+                document.querySelectorAll('.utrInput').forEach(input => {
+                    input.value = '';
+                });
             });
         }
+
+        updateTopStatsUI();
     }
-
-    // Back to Dashboard
-    document.getElementById('backToDashboardBtn').addEventListener('click', () => {
-        // Stop running transactions if any
-        if (window.runningTransactionTimeout) {
-            clearTimeout(window.runningTransactionTimeout);
-        }
-
-        document.getElementById('finalMessageSection').classList.add('hidden');
-        document.getElementById('runningAccountSection').classList.add('hidden');
-        document.getElementById('mainDashboard').classList.remove('hidden');
-        
-        // Reset all sections
-        document.getElementById('gamingFundSection').classList.add('hidden');
-        document.getElementById('autodebitSection').classList.add('hidden');
-        document.getElementById('activationPaymentSection').classList.add('hidden');
-        document.getElementById('activationCodeUpiSection').classList.add('hidden');
-        document.getElementById('activationCodeDisplaySection').classList.add('hidden');
-        document.getElementById('codeVerificationSection').classList.add('hidden');
-        document.getElementById('accountDetailsForm').reset();
-        
-        // Reset UTR inputs
-        document.querySelectorAll('.utrInput').forEach(input => {
-            input.value = '';
-        });
-    });
 }
+
+});
