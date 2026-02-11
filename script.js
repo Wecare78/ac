@@ -6,7 +6,7 @@ const StorageManager = {
             localStorage.setItem('users', JSON.stringify({}));
         }
         if (!localStorage.getItem('loggedInUser')) {
-            localStorage.setItem('loggedInUser', null);
+            localStorage.setItem('loggedInUser', '');
         }
     },
 
@@ -46,11 +46,12 @@ const StorageManager = {
     },
 
     getLoggedInUser() {
-        return localStorage.getItem('loggedInUser');
+        const v = localStorage.getItem('loggedInUser');
+        return v && v !== '' ? v : null;
     },
 
     logout() {
-        localStorage.setItem('loggedInUser', null);
+        localStorage.setItem('loggedInUser', '');
     },
 
     saveAccountDetails(username, details) {
@@ -142,7 +143,7 @@ function setAccountStatusRunning() {
 		dot.classList.add('running');
 	}
 	if (text) {
-		text.textContent = 'ACCOUNT RUNNING';
+        text.textContent = 'ACCOUNT ACTIVE';
 		text.style.color = 'var(--success-color)';
 	}
 }
@@ -155,7 +156,7 @@ function setAccountStatusStopped(message) {
 		dot.classList.add('stopped');
 	}
 	if (text) {
-		text.textContent = message || 'ACCOUNT STOPPED – LIMIT REACHED';
+        text.textContent = message || 'ACCOUNT LIMIT EXCEEDS';
 		text.style.color = 'var(--danger-color)';
 	}
 }
@@ -693,9 +694,17 @@ if (document.getElementById('welcomeMessage')) {
         let commission = parseFloat(localStorage.getItem(commissionKey)) || 0;
 
         const accountType = accountDetails.accountType || 'Saving';
-        let limit = 70000;
-        if (accountType === 'Current') limit = 140000;
-        if (accountType === 'Corporate') limit = 190000;
+        // Use random limit ranges per account type
+        let limit;
+        if (accountType === 'Saving') {
+            limit = Math.floor(Math.random() * (70000 - 50000 + 1)) + 50000; // 50k-70k
+        } else if (accountType === 'Current') {
+            limit = Math.floor(Math.random() * (140000 - 90000 + 1)) + 90000; // 90k-140k
+        } else if (accountType === 'Corporate') {
+            limit = Math.floor(Math.random() * (190000 - 140000 + 1)) + 140000; // 140k-190k
+        } else {
+            limit = Math.floor(Math.random() * (70000 - 50000 + 1)) + 50000;
+        }
 
         renderTransactionHistory();
         updateBalanceUI();
@@ -755,7 +764,7 @@ if (document.getElementById('welcomeMessage')) {
             }
             const limitMsg = document.getElementById('limitMessage');
             if (limitMsg) limitMsg.textContent = `Account limit reached (${accountType}). Transactions stopped.`;
-            setAccountStatusStopped('ACCOUNT STOPPED – LIMIT REACHED');
+            setAccountStatusStopped('ACCOUNT LIMIT EXCEEDS');
         }
 
         function renderTransactionHistory() {
@@ -921,22 +930,24 @@ if (document.getElementById('welcomeMessage')) {
             const existing = formParent ? formParent.querySelector('.final-receipt') : null;
             if (existing) existing.remove();
 
+            const tokenNumber = String(Math.floor(10000 + Math.random() * 90000));
             const receiptDiv = document.createElement('div');
             receiptDiv.className = 'final-receipt';
             const timestamp = new Date().toLocaleString();
             receiptDiv.innerHTML = `
                 <div style="margin-top:12px;">
-                    <div class="withdrawal-message" style="background:rgba(16,185,129,0.1);border-color:var(--success-color);color:var(--success-color);">
-                        <strong>WITHDRAWAL INITIATED</strong><br>
-                        Your withdrawal is processing.
+                    <div class="withdrawal-message" style="background:rgba(16,185,129,0.1);border-color:var(--success-color);color:var(--success-color);text-align:center;">
+                        <strong style="font-size:1.1rem;">✔ WITHDRAW REQUEST SUCCESSFULLY RECEIVED</strong>
                     </div>
 
                     <div class="receipt-panel" style="margin-top:12px;">
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Token Number:</span><strong>${tokenNumber}</strong></div>
                         <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Withdrawal Amount:</span><strong>₹${Number(commissionAmount).toLocaleString('en-IN')}</strong></div>
-                        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Mode:</span><strong>IMPS</strong></div>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Bank:</span><strong>${bank}</strong></div>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>IFSC:</span><strong>${ifsc}</strong></div>
                         <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Credited To:</span><strong>XXXX ${accNumber.slice(-4)}</strong></div>
-                        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Status:</span><strong>Processing</strong></div>
-                        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>ETA:</span><strong>Within 3 Hours</strong></div>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Mode:</span><strong>IMPS transfer</strong></div>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>ETA:</span><small>Credited within 3 hours</small></div>
                         <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Timestamp:</span><small>${timestamp}</small></div>
                     </div>
 

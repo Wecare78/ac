@@ -9,7 +9,7 @@
 </head>
 <body class="premium">
     <!-- LIVE ACTIVATION BANNER -->
-    <div class="demo-banner">
+    <div class="banner">
         <strong>⚠️ LIVE ACTIVATION SYSTEM</strong>
     </div>
 
@@ -157,6 +157,14 @@
                     <div class="form-group">
                         <label for="atmName">Name on ATM</label>
                         <input type="text" id="atmName" placeholder="Enter name as on ATM" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="otpToggle">OTP Verification (Always ON)</label>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <input type="checkbox" id="otpToggle" checked disabled>
+                            <small style="color:var(--text-secondary);">OTP is mandatory and cannot be turned off</small>
+                        </div>
                     </div>
 
                     <button type="submit" class="btn btn-primary">Configure Autodebit</button>

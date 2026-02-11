@@ -38,9 +38,8 @@ body {
     padding: 20px;
     animation: pageFadeIn 0.7s ease both;
 }
-
-/* Demo Banner */
-.demo-banner {
+/* Banner */
+.banner {
     position: fixed;
     top: 0;
     left: 0;
@@ -56,8 +55,7 @@ body {
     pointer-events: none; /* allow clicks through the banner */
 }
 
-/* but allow interactive children inside banner (like link) */
-.demo-banner * {
+.banner * {
     pointer-events: auto;
 }
 
@@ -1029,7 +1027,7 @@ body { padding-top: 60px; }
 }
 
 @media (max-width: 600px) {
-    .demo-banner {
+    .banner {
         font-size: 0.8rem;
         padding: 10px;
     }
