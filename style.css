@@ -241,6 +241,7 @@ body { padding-top: 60px; }
     text-transform: uppercase;
     letter-spacing: 0.5px;
     pointer-events: auto;
+    touch-action: manipulation; /* Fix: Improve touch responsiveness on mobile */
 }
 
 .btn:disabled {

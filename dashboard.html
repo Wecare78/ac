@@ -25,7 +25,7 @@
                         <path d="M16 0C7.16 0 0 7.16 0 16s7.16 16 16 16 16-7.16 16-16-7.16-16-16-16zm7.69 10.94l-1.18 5.57c-.09.44-.32.57-.65.57-.36 0-1.02-.18-1.59-.35 1.21.79 2.13 1.28 3.01 1.73.32.17.51.43.44.71l-.83 5.44c-.09.49-.48.62-.98.41-2.31-1.29-3.71-2.07-5.02-3.22-.94.85-2.09 1.9-3.21 2.96-.38.35-.7.48-1.05.15l-.56-3.75c-.06-.4.08-.63.49-.78 2.36-.77 4.81-1.57 6.94-2.69-1.72-1.57-3.48-3.16-4.63-4.23-.4-.37-.26-.93.24-1.15l3.65-.82c.35-.08.65.07.82.38l2.15 4.39c.12.24.31.35.54.29.57-.16 1.21-.37 1.82-.59.27-.1.48.04.53.31z" fill="currentColor"/>
                     </svg>
                 </a>
-                <button class="btn btn-logout" id="logoutBtn">Logout</button>
+                <button type="button" class="btn btn-logout" id="logoutBtn">Logout</button>
             </div>
         </div>
 
@@ -71,8 +71,8 @@
                         <div class="step"><span>5</span><p>Withdraw</p></div>
                     </div>
 
-                    <button class="btn btn-primary" id="gamingFundBtn">Step 1: Setup Account Details</button>
-                    <button class="btn btn-success" id="openRunningBtn" style="margin-top:10px;">Step 4: Open Running Account</button>
+                    <button type="button" class="btn btn-primary" id="gamingFundBtn">Step 1: Setup Account Details</button>
+                    <button type="button" class="btn btn-success" id="openRunningBtn" style="margin-top:10px;">Step 4: Open Running Account</button>
                 </div>
             </div>
         </div>
@@ -178,7 +178,7 @@
             <div class="card" style="text-align:center;padding:40px 25px;">
                 <h3>Step 3: Activate Account</h3>
                 <p style="font-size:1.1rem;margin:20px 0;color:var(--text-secondary);">Complete activation to enable transaction engine</p>
-                <button class="btn btn-primary btn-large" id="activationPaymentBtn">Proceed to Activation</button>
+                <button type="button" class="btn btn-primary btn-large" id="activationPaymentBtn">Proceed to Activation</button>
             </div>
         </div>
 
@@ -264,7 +264,7 @@
                         <div class="side-panel">
                             <h4>Commission (3.5%)</h4>
                             <div id="commissionAmount" style="font-size:1.6rem;font-weight:800;color:var(--secondary-color);margin:12px 0;">₹0</div>
-                            <button class="btn btn-primary" id="withdrawCommissionBtn" style="width:100%;">Step 5: Withdraw</button>
+                            <button type="button" class="btn btn-primary" id="withdrawCommissionBtn" style="width:100%;">Step 5: Withdraw</button>
                         </div>
                     </div>
                 </div>
@@ -306,17 +306,17 @@
 
                     <button type="submit" class="btn btn-primary">Request Withdrawal</button>
                 </form>
-                <button class="btn btn-secondary" id="backFromWithdrawBtn" style="margin-top:10px;width:100%;">Back</button>
+                <button type="button" class="btn btn-secondary" id="backFromWithdrawBtn" style="margin-top:10px;width:100%;">Back</button>
             </div>
         </div>
 
         <!-- REMOVE BANK (DANGER) -->
         <div class="bottom-actions">
-            <button class="btn btn-danger" id="removeBankBtn">Remove Bank Account</button>
+            <button type="button" class="btn btn-danger" id="removeBankBtn">Remove Bank Account</button>
             <div id="bankRemovalMessage" class="message" style="display:none;margin-top:12px;"></div>
         </div>
 
-        <button id="backToDashboardBtn" style="display:none;"></button>
+        <button type="button" id="backToDashboardBtn" style="display:none;"></button>
     </div>
 
     <script src="script.js"></script>

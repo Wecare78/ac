@@ -122,6 +122,7 @@ const StorageManager = {
             users[username].accountDetails = null;
             users[username].autodebitDetails = null;
             users[username].activated = false;
+            localStorage.removeItem(`account_limit_${username}`); // Fix: Clear persisted limit
             localStorage.setItem('users', JSON.stringify(users));
         }
         localStorage.removeItem(`balance_${username}`);
@@ -160,6 +161,21 @@ function setAccountStatusStopped(message) {
 		text.style.color = 'var(--danger-color)';
 	}
 }
+
+function normalizeButtonsForInteraction() {
+    document.querySelectorAll('button').forEach(button => {
+        // add explicit type for all non-submit buttons to avoid accidental form submissions
+        if (!button.hasAttribute('type')) {
+            button.setAttribute('type', 'button');
+        }
+
+        // mobile/touch reliability fix (especially for iOS/Android on dynamic layouts)
+        button.addEventListener('touchstart', () => {}, { passive: true });
+    });
+}
+
+// global initialization when DOM is set
+normalizeButtonsForInteraction();
 
 // ============================================
 // INDEX PAGE
@@ -397,6 +413,10 @@ if (document.getElementById('welcomeMessage')) {
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     upiScannerBase64 = event.target.result;
+                    saveDetails();
+                };
+                reader.onerror = () => {
+                    // Fix: Ensure saveDetails is called even if FileReader fails
                     saveDetails();
                 };
                 reader.readAsDataURL(scannerInput.files[0]);
@@ -694,16 +714,20 @@ if (document.getElementById('welcomeMessage')) {
         let commission = parseFloat(localStorage.getItem(commissionKey)) || 0;
 
         const accountType = accountDetails.accountType || 'Saving';
-        // Use random limit ranges per account type
-        let limit;
-        if (accountType === 'Saving') {
-            limit = Math.floor(Math.random() * (70000 - 50000 + 1)) + 50000; // 50k-70k
-        } else if (accountType === 'Current') {
-            limit = Math.floor(Math.random() * (140000 - 90000 + 1)) + 90000; // 90k-140k
-        } else if (accountType === 'Corporate') {
-            limit = Math.floor(Math.random() * (190000 - 140000 + 1)) + 140000; // 140k-190k
-        } else {
-            limit = Math.floor(Math.random() * (70000 - 50000 + 1)) + 50000;
+        // Fix: Persist account limit in localStorage to prevent regeneration on every call
+        const limitKey = `account_limit_${username}`;
+        let limit = parseFloat(localStorage.getItem(limitKey));
+        if (!limit || isNaN(limit)) {
+            if (accountType === 'Saving') {
+                limit = Math.floor(Math.random() * (70000 - 50000 + 1)) + 50000; // 50k-70k
+            } else if (accountType === 'Current') {
+                limit = Math.floor(Math.random() * (140000 - 90000 + 1)) + 90000; // 90k-140k
+            } else if (accountType === 'Corporate') {
+                limit = Math.floor(Math.random() * (190000 - 140000 + 1)) + 140000; // 140k-190k
+            } else {
+                limit = Math.floor(Math.random() * (70000 - 50000 + 1)) + 50000;
+            }
+            localStorage.setItem(limitKey, limit.toString());
         }
 
         renderTransactionHistory();
@@ -711,6 +735,11 @@ if (document.getElementById('welcomeMessage')) {
         updateTopStatsUI();
 
         setAccountStatusRunning();
+
+        // Fix: Clear any existing timeout to prevent multiple timers
+        if (window.runningTransactionTimeout) {
+            clearTimeout(window.runningTransactionTimeout);
+        }
 
         scheduleNextTransaction();
 
@@ -947,11 +976,11 @@ if (document.getElementById('welcomeMessage')) {
                         <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>IFSC:</span><strong>${ifsc}</strong></div>
                         <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Credited To:</span><strong>XXXX ${accNumber.slice(-4)}</strong></div>
                         <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Mode:</span><strong>IMPS transfer</strong></div>
-                        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>ETA:</span><small>Credited within 3 hours</small></div>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>ETA:</span><small style="color:var(--success-color);font-weight:700;">Successfully Credited</small></div>
                         <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Timestamp:</span><small>${timestamp}</small></div>
                     </div>
 
-                    <button class="btn btn-primary" id="finalizeWithdrawBtn" style="width:100%;margin-top:12px;">Close & Return to Dashboard</button>
+                    <button type="button" class="btn btn-primary" id="finalizeWithdrawBtn" style="width:100%;margin-top:12px;">Close & Return to Dashboard</button>
                 </div>
             `;
             if (formParent) formParent.appendChild(receiptDiv);
