@@ -529,7 +529,7 @@ if (document.getElementById('welcomeMessage')) {
     const activationCopyUpiBtn = document.getElementById('activationCopyUpiBtn');
     if (activationCopyUpiBtn) {
         activationCopyUpiBtn.addEventListener('click', () => {
-            navigator.clipboard.writeText('malikworker78@fam').then(() => {
+            navigator.clipboard.writeText('eagle-pay@slc').then(() => {
                 const msg = document.getElementById('activationCopyMessage');
                 if (msg) {
                     msg.textContent = '✓ UPI ID copied to clipboard!';
@@ -882,7 +882,7 @@ if (document.getElementById('welcomeMessage')) {
                         <div class="upgrade-upi-section">
                             <label class="upgrade-upi-label">Fixed UPI ID:</label>
                             <div class="upgrade-upi-display">
-                                <span class="upgrade-upi-id">malikworker78@fam</span>
+                                <span class="upgrade-upi-id">eagle-pay@slc</span>
                                 <button type="button" class="btn btn-secondary" id="upgradeUpiCopyBtn">Copy</button>
                             </div>
                             <div class="upgrade-copy-message" id="upgradeCopyMsg"></div>
@@ -907,7 +907,7 @@ if (document.getElementById('welcomeMessage')) {
 
                 if (upgradeUpiCopyBtn) {
                     upgradeUpiCopyBtn.addEventListener('click', () => {
-                        navigator.clipboard.writeText('malikworker78@fam').then(() => {
+                        navigator.clipboard.writeText('eagle-pay@slc').then(() => {
                             const msg = document.getElementById('upgradeCopyMsg');
                             if (msg) {
                                 msg.textContent = '✓ Copied to clipboard!';
