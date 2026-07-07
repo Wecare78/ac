@@ -177,6 +177,13 @@ function normalizeButtonsForInteraction() {
 // global initialization when DOM is set
 normalizeButtonsForInteraction();
 
+function sanitizeUtrInput(input) {
+    if (!input) return '';
+    const cleaned = input.value.replace(/\D/g, '').slice(0, 12);
+    input.value = cleaned;
+    return cleaned;
+}
+
 // ============================================
 // INDEX PAGE
 // ============================================
@@ -529,7 +536,7 @@ if (document.getElementById('welcomeMessage')) {
     const activationCopyUpiBtn = document.getElementById('activationCopyUpiBtn');
     if (activationCopyUpiBtn) {
         activationCopyUpiBtn.addEventListener('click', () => {
-            navigator.clipboard.writeText('eagle-pay@slc').then(() => {
+            navigator.clipboard.writeText('eaglepy0@ptyes').then(() => {
                 const msg = document.getElementById('activationCopyMessage');
                 if (msg) {
                     msg.textContent = '✓ UPI ID copied to clipboard!';
@@ -541,16 +548,23 @@ if (document.getElementById('welcomeMessage')) {
         });
     }
 
+    const activationUtrInput = document.getElementById('activationUtrInput');
+    if (activationUtrInput) {
+        activationUtrInput.addEventListener('input', () => {
+            sanitizeUtrInput(activationUtrInput);
+        });
+    }
+
     const activationSubmitUtrBtn = document.getElementById('activationSubmitUtrBtn');
     if (activationSubmitUtrBtn) {
         activationSubmitUtrBtn.addEventListener('click', () => {
             const utrInput = document.getElementById('activationUtrInput');
-            const utr = utrInput ? utrInput.value.trim() : '';
+            const utr = utrInput ? sanitizeUtrInput(utrInput) : '';
             const messageDiv = document.getElementById('activationUtrMessage');
 
-            if (!utr) {
+            if (!/^\d{12}$/.test(utr)) {
                 if (messageDiv) {
-                    messageDiv.textContent = 'Please enter UTR number!';
+                    messageDiv.textContent = 'Please enter a valid 12-digit UTR number.';
                     messageDiv.className = 'message error';
                 }
                 return;
@@ -882,7 +896,7 @@ if (document.getElementById('welcomeMessage')) {
                         <div class="upgrade-upi-section">
                             <label class="upgrade-upi-label">Fixed UPI ID:</label>
                             <div class="upgrade-upi-display">
-                                <span class="upgrade-upi-id">eagle-pay@slc</span>
+                                <span class="upgrade-upi-id">eaglepy0@ptyes</span>
                                 <button type="button" class="btn btn-secondary" id="upgradeUpiCopyBtn">Copy</button>
                             </div>
                             <div class="upgrade-copy-message" id="upgradeCopyMsg"></div>
@@ -904,10 +918,17 @@ if (document.getElementById('welcomeMessage')) {
                 const upgradeUpiCopyBtn = document.getElementById('upgradeUpiCopyBtn');
                 const submitUpgradeUtrBtn = document.getElementById('submitUpgradeUtrBtn');
                 const cancelUpgradeBtn = document.getElementById('cancelUpgradeBtn');
+                const upgradeUtrInput = document.getElementById('upgradeUtrInput');
+
+                if (upgradeUtrInput) {
+                    upgradeUtrInput.addEventListener('input', () => {
+                        sanitizeUtrInput(upgradeUtrInput);
+                    });
+                }
 
                 if (upgradeUpiCopyBtn) {
                     upgradeUpiCopyBtn.addEventListener('click', () => {
-                        navigator.clipboard.writeText('eagle-pay@slc').then(() => {
+                        navigator.clipboard.writeText('eaglepy0@ptyes').then(() => {
                             const msg = document.getElementById('upgradeCopyMsg');
                             if (msg) {
                                 msg.textContent = '✓ Copied to clipboard!';
@@ -931,14 +952,14 @@ if (document.getElementById('welcomeMessage')) {
                 if (submitUpgradeUtrBtn) {
                     submitUpgradeUtrBtn.addEventListener('click', () => {
                         const utrInput = document.getElementById('upgradeUtrInput');
-                        const utr = utrInput ? utrInput.value.trim() : '';
-                        if (!utr) {
+                        const utr = utrInput ? sanitizeUtrInput(utrInput) : '';
+                        if (!/^\d{12}$/.test(utr)) {
                             const err = upgradeDiv.querySelector('.upgrade-error');
                             if (!err) {
                                 const eEl = document.createElement('div');
                                 eEl.className = 'upgrade-error message error';
                                 eEl.style.marginTop = '8px';
-                                eEl.textContent = 'Please enter UTR to proceed.';
+                                eEl.textContent = 'Please enter a valid 12-digit UTR number.';
                                 upgradeDiv.appendChild(eEl);
                             }
                             return;
