@@ -10,6 +10,11 @@ const StorageManager = {
         }
     },
 
+    isAccountActivated(username) {
+        const users = JSON.parse(localStorage.getItem('users')) || {};
+        return !!(users[username] && users[username].activated);
+    },
+
     registerUser(email, username, password) {
         const users = JSON.parse(localStorage.getItem('users')) || {};
         
@@ -184,6 +189,206 @@ function sanitizeUtrInput(input) {
     return cleaned;
 }
 
+const workflowSectionIds = [
+    'mainDashboard',
+    'gamingFundSection',
+    'autodebitSection',
+    'activationPaymentSection',
+    'activationCodeUpiSection',
+    'activationCodeDisplaySection',
+    'codeVerificationSection',
+    'runningAccountSection',
+    'withdrawCommissionSection',
+    'bonusPageSection',
+    'bonusWithdrawSection'
+];
+const workflowHistory = [];
+let bonusPopupTimer = null;
+
+function getBonusStorageKey(key, username) {
+    return `${key}_${username || 'default'}`;
+}
+
+function isBonusClaimed(username) {
+    return localStorage.getItem(getBonusStorageKey('bonusClaimed', username)) === '1';
+}
+
+function setBonusState(username, key, value) {
+    localStorage.setItem(getBonusStorageKey(key, username), value ? '1' : '0');
+}
+
+function getCurrentWorkflowSectionId() {
+    return workflowSectionIds.find(id => {
+        const el = document.getElementById(id);
+        return el && !el.classList.contains('hidden');
+    }) || 'mainDashboard';
+}
+
+function showWorkflowSection(sectionId, pushHistory = true) {
+    const currentSectionId = getCurrentWorkflowSectionId();
+    if (pushHistory && sectionId && currentSectionId && currentSectionId !== sectionId) {
+        workflowHistory.push(currentSectionId);
+        if (workflowHistory.length > 20) workflowHistory.shift();
+    }
+
+    workflowSectionIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.toggle('hidden', id !== sectionId);
+        }
+    });
+
+    const transactionHistorySection = document.getElementById('transactionHistorySection');
+    if (transactionHistorySection) {
+        const shouldHideTxHistory = sectionId === 'bonusPageSection' || sectionId === 'bonusWithdrawSection';
+        transactionHistorySection.classList.toggle('hidden', shouldHideTxHistory);
+    }
+
+    const backBtn = document.getElementById('dashboardBackBtn');
+    if (backBtn) {
+        backBtn.style.display = 'inline-flex';
+    }
+}
+
+function goBackOneStep() {
+    const currentSectionId = getCurrentWorkflowSectionId();
+    const previousSectionId = workflowHistory.pop();
+
+    if (previousSectionId) {
+        showWorkflowSection(previousSectionId, false);
+        return;
+    }
+
+    if (currentSectionId && currentSectionId !== 'mainDashboard') {
+        showWorkflowSection('mainDashboard', false);
+        return;
+    }
+}
+
+function updateBonusBadgeUI(username = StorageManager.getLoggedInUser()) {
+    const bonusBadge = document.getElementById('bonusBadge');
+    const bonusBox = document.getElementById('bonusBox');
+    const bonusOpened = localStorage.getItem(getBonusStorageKey('bonusOpened', username)) === '1';
+
+    if (bonusBox) bonusBox.style.display = 'inline-flex';
+    if (bonusBadge) bonusBadge.style.display = bonusOpened ? 'none' : 'inline-flex';
+}
+
+function showBonusInlineMessage(message, type = 'error', timeoutMs = 7000) {
+    const messageContainer = document.getElementById('bonusMessageContainer');
+    if (!messageContainer) return;
+
+    messageContainer.style.display = 'block';
+    messageContainer.textContent = message;
+    messageContainer.className = `bonus-inline-message ${type}`;
+
+    clearTimeout(bonusPopupTimer);
+    bonusPopupTimer = setTimeout(() => {
+        messageContainer.style.display = 'none';
+        messageContainer.textContent = '';
+        messageContainer.className = 'bonus-inline-message';
+    }, timeoutMs);
+}
+
+function renderBonusPageUI(username = StorageManager.getLoggedInUser()) {
+    const bonusSection = document.getElementById('bonusPageSection');
+    const title = bonusSection ? bonusSection.querySelector('h3') : null;
+    const subtitle = bonusSection ? bonusSection.querySelector('.bonus-page-subtitle') : null;
+    const amount = bonusSection ? bonusSection.querySelector('.bonus-amount') : null;
+    const claimButton = bonusSection ? bonusSection.querySelector('#claimBonusBtn') : null;
+    const messageContainer = document.getElementById('bonusMessageContainer');
+
+    if (!bonusSection) return;
+
+    if (isBonusClaimed(username)) {
+        if (title) title.textContent = '✅ CONGRATULATIONS';
+        if (subtitle) subtitle.textContent = 'YOU HAVE SUCCESSFULLY CLAIMED YOUR BONUS.';
+        if (amount) {
+            amount.textContent = '';
+            amount.style.display = 'none';
+        }
+        if (claimButton) {
+            claimButton.textContent = 'BONUS CLAIMED';
+            claimButton.disabled = true;
+            claimButton.classList.remove('btn-primary');
+            claimButton.classList.add('btn-secondary');
+        }
+        if (messageContainer) {
+            messageContainer.style.display = 'none';
+            messageContainer.textContent = '';
+            messageContainer.className = 'bonus-inline-message';
+        }
+        return;
+    }
+
+    if (title) title.textContent = 'CONGRATULATIONS';
+    if (subtitle) subtitle.textContent = 'SPECIAL BONUS CREDITED';
+    if (amount) {
+        amount.textContent = '₹999';
+        amount.style.display = 'block';
+    }
+    if (claimButton) {
+        claimButton.textContent = 'CLAIM / WITHDRAW ₹999';
+        claimButton.disabled = false;
+        claimButton.classList.remove('btn-secondary');
+        claimButton.classList.add('btn-primary');
+    }
+    if (messageContainer) {
+        messageContainer.style.display = 'none';
+        messageContainer.textContent = '';
+        messageContainer.className = 'bonus-inline-message';
+    }
+}
+
+function showBonusReceipt(amount, ifsc, bank, holder, username = StorageManager.getLoggedInUser()) {
+    const form = document.getElementById('bonusWithdrawForm');
+    const formParent = form ? form.parentElement : null;
+    const existing = formParent ? formParent.querySelector('.final-receipt') : null;
+    if (existing) existing.remove();
+
+    const receiptDiv = document.createElement('div');
+    receiptDiv.className = 'final-receipt';
+    const timestamp = new Date().toLocaleString();
+    receiptDiv.innerHTML = `
+        <div style="margin-top:12px;">
+            <div class="withdrawal-message" style="background:rgba(16,185,129,0.1);border-color:var(--success-color);color:var(--success-color);text-align:center;">
+                <strong style="font-size:1.1rem;">✔ WITHDRAW REQUEST SUCCESSFULLY RECEIVED</strong>
+            </div>
+
+            <div class="receipt-panel" style="margin-top:12px;">
+                <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Withdrawal Amount:</span><strong>₹${Number(amount).toLocaleString('en-IN')}</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Bank:</span><strong>${bank}</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>IFSC:</span><strong>${ifsc}</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Credited To:</span><strong>${holder}</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Mode:</span><strong>IMPS transfer</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Status:</span><small style="color:var(--success-color);font-weight:700;">Successfully Credited</small></div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Timestamp:</span><small>${timestamp}</small></div>
+            </div>
+
+            <button type="button" class="btn btn-primary" id="closeBonusReceiptBtn" style="width:100%;margin-top:12px;">Close & Return to Dashboard</button>
+        </div>
+    `;
+
+    if (formParent) {
+        formParent.innerHTML = '';
+        formParent.appendChild(receiptDiv);
+    }
+
+    const closeBtn = document.getElementById('closeBonusReceiptBtn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            const bonusWithdrawSection = document.getElementById('bonusWithdrawSection');
+            const mainDashboard = document.getElementById('mainDashboard');
+            const transactionHistorySection = document.getElementById('transactionHistorySection');
+            if (bonusWithdrawSection) bonusWithdrawSection.classList.add('hidden');
+            if (mainDashboard) mainDashboard.classList.remove('hidden');
+            if (transactionHistorySection) transactionHistorySection.classList.remove('hidden');
+            if (formParent) formParent.innerHTML = '';
+            renderBonusPageUI(username);
+        });
+    }
+}
+
 // ============================================
 // INDEX PAGE
 // ============================================
@@ -320,6 +525,75 @@ if (document.getElementById('welcomeMessage')) {
         welcomeMsg.textContent = `WELCOME ${loggedInUser.toUpperCase()}`;
     }
 
+    const backBtn = document.getElementById('dashboardBackBtn');
+    if (backBtn) {
+        backBtn.addEventListener('click', () => goBackOneStep());
+        backBtn.style.display = 'inline-flex';
+    }
+
+    const bonusBox = document.getElementById('bonusBox');
+    if (bonusBox) {
+        bonusBox.addEventListener('click', () => {
+            setBonusState(loggedInUser, 'bonusOpened', true);
+            updateBonusBadgeUI(loggedInUser);
+            renderBonusPageUI(loggedInUser);
+            showWorkflowSection('bonusPageSection');
+        });
+    }
+
+    const claimBonusBtn = document.getElementById('claimBonusBtn');
+    if (claimBonusBtn) {
+        claimBonusBtn.addEventListener('click', () => {
+            if (isBonusClaimed(loggedInUser)) {
+                renderBonusPageUI(loggedInUser);
+                return;
+            }
+
+            if (!StorageManager.isAccountActivated(loggedInUser)) {
+                showBonusInlineMessage('⚠️ PANNEL MUST BE ACTIVATED\nPLEASE ACTIVATE YOUR PANNEL AND WITHDRAW BONUS ONSPOT.');
+                return;
+            }
+
+            setBonusState(loggedInUser, 'bonusWithdrawStarted', true);
+            showWorkflowSection('bonusWithdrawSection');
+        });
+    }
+
+    const bonusWithdrawForm = document.getElementById('bonusWithdrawForm');
+    if (bonusWithdrawForm) {
+        bonusWithdrawForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const accNumber = document.getElementById('bonusWithdrawAccNumber').value.trim();
+            const ifsc = document.getElementById('bonusWithdrawIfsc').value.trim();
+            const holder = document.getElementById('bonusWithdrawHolder').value.trim();
+            const bank = document.getElementById('bonusWithdrawBank').value.trim();
+            const messageDiv = document.getElementById('bonusWithdrawMessage');
+
+            if (!accNumber || !ifsc || !holder || !bank) {
+                if (messageDiv) {
+                    messageDiv.textContent = 'Please fill all required fields.';
+                    messageDiv.className = 'message error';
+                }
+                return;
+            }
+
+            setBonusState(loggedInUser, 'bonusClaimed', true);
+            setBonusState(loggedInUser, 'bonusWithdrawCompleted', true);
+            if (messageDiv) {
+                messageDiv.textContent = '';
+                messageDiv.className = 'message';
+            }
+            const transactionHistorySection = document.getElementById('transactionHistorySection');
+            if (transactionHistorySection) transactionHistorySection.classList.add('hidden');
+            renderBonusPageUI(loggedInUser);
+            showBonusReceipt(999, ifsc, bank, holder, loggedInUser);
+        });
+    }
+
+    updateBonusBadgeUI(loggedInUser);
+    renderBonusPageUI(loggedInUser);
+    showWorkflowSection('mainDashboard', false);
+
     function updateTopStatsUI() {
         const balanceKey = `balance_${loggedInUser}`;
         const commissionKey = `commission_${loggedInUser}`;
@@ -346,10 +620,7 @@ if (document.getElementById('welcomeMessage')) {
     const gamingFundBtn = document.getElementById('gamingFundBtn');
     if (gamingFundBtn) {
         gamingFundBtn.addEventListener('click', () => {
-            const mainDash = document.getElementById('mainDashboard');
-            const gamingSection = document.getElementById('gamingFundSection');
-            if (mainDash) mainDash.classList.add('hidden');
-            if (gamingSection) gamingSection.classList.remove('hidden');
+            showWorkflowSection('gamingFundSection');
 
             const savedDetails = StorageManager.getAccountDetails(loggedInUser);
             if (savedDetails) {
@@ -452,10 +723,7 @@ if (document.getElementById('welcomeMessage')) {
                 if (result.success) {
                     setTimeout(() => {
                         if (messageDiv) messageDiv.textContent = '';
-                        const gamingSection = document.getElementById('gamingFundSection');
-                        const autodebitSection = document.getElementById('autodebitSection');
-                        if (gamingSection) gamingSection.classList.add('hidden');
-                        if (autodebitSection) autodebitSection.classList.remove('hidden');
+                        showWorkflowSection('autodebitSection');
 
                         const savedAutodebit = StorageManager.getAutodebitDetails(loggedInUser);
                         if (savedAutodebit) {
@@ -514,10 +782,7 @@ if (document.getElementById('welcomeMessage')) {
             if (result.success) {
                 setTimeout(() => {
                     if (messageDiv) messageDiv.textContent = '';
-                    const autodebitSection = document.getElementById('autodebitSection');
-                    const activationSection = document.getElementById('activationPaymentSection');
-                    if (autodebitSection) autodebitSection.classList.add('hidden');
-                    if (activationSection) activationSection.classList.remove('hidden');
+                    showWorkflowSection('activationPaymentSection');
                 }, 1500);
             }
         });
@@ -526,10 +791,7 @@ if (document.getElementById('welcomeMessage')) {
     const activationPaymentBtn = document.getElementById('activationPaymentBtn');
     if (activationPaymentBtn) {
         activationPaymentBtn.addEventListener('click', () => {
-            const paymentSection = document.getElementById('activationPaymentSection');
-            const upiSection = document.getElementById('activationCodeUpiSection');
-            if (paymentSection) paymentSection.classList.add('hidden');
-            if (upiSection) upiSection.classList.remove('hidden');
+            showWorkflowSection('activationCodeUpiSection');
         });
     }
 
@@ -574,11 +836,9 @@ if (document.getElementById('welcomeMessage')) {
             localStorage.setItem(`activationCode_${loggedInUser}`, activationCode);
 
             if (messageDiv) messageDiv.textContent = '';
-            const upiSection = document.getElementById('activationCodeUpiSection');
+            showWorkflowSection('activationCodeDisplaySection');
             const displaySection = document.getElementById('activationCodeDisplaySection');
-            if (upiSection) upiSection.classList.add('hidden');
             if (displaySection) {
-                displaySection.classList.remove('hidden');
                 const codeEl = document.getElementById('generatedActivationCode');
                 if (codeEl) codeEl.textContent = activationCode;
             }
@@ -601,10 +861,7 @@ if (document.getElementById('welcomeMessage')) {
     const activateAccountCodeBtn = document.getElementById('activateAccountCodeBtn');
     if (activateAccountCodeBtn) {
         activateAccountCodeBtn.addEventListener('click', () => {
-            const displaySection = document.getElementById('activationCodeDisplaySection');
-            const verifySection = document.getElementById('codeVerificationSection');
-            if (displaySection) displaySection.classList.add('hidden');
-            if (verifySection) verifySection.classList.remove('hidden');
+            showWorkflowSection('codeVerificationSection');
         });
     }
 
@@ -633,21 +890,7 @@ if (document.getElementById('welcomeMessage')) {
             }
 
             StorageManager.activateAccount(loggedInUser);
-            
-            const verifySection = document.getElementById('codeVerificationSection');
-            const paymentSection = document.getElementById('activationPaymentSection');
-            const gamingSection = document.getElementById('gamingFundSection');
-            const autodebitSection = document.getElementById('autodebitSection');
-            const mainDash = document.getElementById('mainDashboard');
-            const runningSection = document.getElementById('runningAccountSection');
-            
-            if (verifySection) verifySection.classList.add('hidden');
-            if (paymentSection) paymentSection.classList.add('hidden');
-            if (gamingSection) gamingSection.classList.add('hidden');
-            if (autodebitSection) autodebitSection.classList.add('hidden');
-            if (mainDash) mainDash.classList.add('hidden');
-            if (runningSection) runningSection.classList.remove('hidden');
-
+            showWorkflowSection('runningAccountSection');
             startRunningAccount(loggedInUser);
         });
     }
@@ -658,10 +901,7 @@ if (document.getElementById('welcomeMessage')) {
             const users = JSON.parse(localStorage.getItem('users')) || {};
             const userObj = users[loggedInUser] || {};
             if (userObj && userObj.activated) {
-                const mainDash = document.getElementById('mainDashboard');
-                const runningSection = document.getElementById('runningAccountSection');
-                if (mainDash) mainDash.classList.add('hidden');
-                if (runningSection) runningSection.classList.remove('hidden');
+                showWorkflowSection('runningAccountSection');
                 startRunningAccount(loggedInUser);
             } else {
                 alert('Please complete activation first.');
@@ -688,11 +928,7 @@ if (document.getElementById('welcomeMessage')) {
             if (liveBalanceEl) liveBalanceEl.textContent = '₹0';
             if (commissionAmountEl) commissionAmountEl.textContent = '₹0';
 
-            const runningSection = document.getElementById('runningAccountSection');
-            if (runningSection) runningSection.classList.add('hidden');
-
-            const mainDashboard = document.getElementById('mainDashboard');
-            if (mainDashboard) mainDashboard.classList.remove('hidden');
+            showWorkflowSection('mainDashboard');
 
             const msg = document.getElementById('bankRemovalMessage');
             if (msg) {
@@ -845,10 +1081,7 @@ if (document.getElementById('welcomeMessage')) {
         if (withdrawCommissionBtn) {
             withdrawCommissionBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                const runningSection = document.getElementById('runningAccountSection');
-                const withdrawSection = document.getElementById('withdrawCommissionSection');
-                if (runningSection) runningSection.classList.add('hidden');
-                if (withdrawSection) withdrawSection.classList.remove('hidden');
+                showWorkflowSection('withdrawCommissionSection');
 
                 const form = document.getElementById('withdrawCommissionForm');
                 if (form) form.style.display = 'block';
@@ -1026,10 +1259,7 @@ if (document.getElementById('welcomeMessage')) {
                     }
                     setAccountStatusStopped('ACCOUNT STOPPED – NOT RUNNING');
 
-                    const withdrawSection = document.getElementById('withdrawCommissionSection');
-                    const runningSection = document.getElementById('runningAccountSection');
-                    if (withdrawSection) withdrawSection.classList.add('hidden');
-                    if (runningSection) runningSection.classList.remove('hidden');
+                    showWorkflowSection('runningAccountSection');
 
                     if (form) {
                         form.style.display = 'block';
@@ -1045,10 +1275,7 @@ if (document.getElementById('welcomeMessage')) {
         const backFromWithdrawBtn = document.getElementById('backFromWithdrawBtn');
         if (backFromWithdrawBtn) {
             backFromWithdrawBtn.addEventListener('click', () => {
-                const withdrawSection = document.getElementById('withdrawCommissionSection');
-                const runningSection = document.getElementById('runningAccountSection');
-                if (withdrawSection) withdrawSection.classList.add('hidden');
-                if (runningSection) runningSection.classList.remove('hidden');
+                showWorkflowSection('runningAccountSection');
             });
         }
 
@@ -1059,19 +1286,7 @@ if (document.getElementById('welcomeMessage')) {
                     clearTimeout(window.runningTransactionTimeout);
                 }
 
-                const mainDashboard = document.getElementById('mainDashboard');
-                if (mainDashboard) mainDashboard.classList.remove('hidden');
-                
-                const sections = [
-                    'gamingFundSection', 'autodebitSection', 'activationPaymentSection',
-                    'activationCodeUpiSection', 'activationCodeDisplaySection', 'codeVerificationSection',
-                    'runningAccountSection', 'withdrawCommissionSection'
-                ];
-                
-                sections.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.classList.add('hidden');
-                });
+                showWorkflowSection('mainDashboard');
                 
                 const accountForm = document.getElementById('accountDetailsForm');
                 if (accountForm) accountForm.reset();

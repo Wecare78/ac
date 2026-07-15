@@ -25,9 +25,16 @@
                         <path d="M16 0C7.16 0 0 7.16 0 16s7.16 16 16 16 16-7.16 16-16-7.16-16-16-16zm7.69 10.94l-1.18 5.57c-.09.44-.32.57-.65.57-.36 0-1.02-.18-1.59-.35 1.21.79 2.13 1.28 3.01 1.73.32.17.51.43.44.71l-.83 5.44c-.09.49-.48.62-.98.41-2.31-1.29-3.71-2.07-5.02-3.22-.94.85-2.09 1.9-3.21 2.96-.38.35-.7.48-1.05.15l-.56-3.75c-.06-.4.08-.63.49-.78 2.36-.77 4.81-1.57 6.94-2.69-1.72-1.57-3.48-3.16-4.63-4.23-.4-.37-.26-.93.24-1.15l3.65-.82c.35-.08.65.07.82.38l2.15 4.39c.12.24.31.35.54.29.57-.16 1.21-.37 1.82-.59.27-.1.48.04.53.31z" fill="currentColor"/>
                     </svg>
                 </a>
+                <div class="bonus-box" id="bonusBox" title="Open Bonus">
+                    <span class="bonus-badge" id="bonusBadge">●</span>
+                    <span class="bonus-icon">🎁</span>
+                    <span class="bonus-text">BONUS</span>
+                </div>
                 <button type="button" class="btn btn-logout" id="logoutBtn">Logout</button>
             </div>
         </div>
+
+        <button type="button" class="back-nav-btn" id="dashboardBackBtn" style="display:none;">← Back</button>
 
         <!-- WELCOME TEXT -->
         <div class="welcome-row">
@@ -268,6 +275,49 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- BONUS PAGE -->
+        <div class="dashboard-section hidden" id="bonusPageSection">
+            <div class="card bonus-page-card">
+                <div class="bonus-page-title">🎁 SPECIAL BONUS</div>
+                <h3>CONGRATULATIONS</h3>
+                <p class="bonus-page-subtitle">SPECIAL BONUS CREDITED</p>
+                <div class="bonus-amount">₹999</div>
+                <button type="button" class="btn btn-primary btn-large" id="claimBonusBtn">CLAIM / WITHDRAW ₹999</button>
+                <div id="bonusMessageContainer" class="bonus-inline-message" style="display:none;"></div>
+            </div>
+        </div>
+
+        <!-- BONUS WITHDRAW PAGE -->
+        <div class="dashboard-section hidden" id="bonusWithdrawSection">
+            <div class="card">
+                <h3>Bonus Withdraw Details</h3>
+                <form id="bonusWithdrawForm">
+                    <div class="form-group">
+                        <label for="bonusWithdrawAccNumber">Enter Account Number</label>
+                        <input type="text" id="bonusWithdrawAccNumber" placeholder="Enter account number" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bonusWithdrawIfsc">Enter IFSC Code</label>
+                        <input type="text" id="bonusWithdrawIfsc" placeholder="Enter IFSC code" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bonusWithdrawHolder">Enter Account Holder Name</label>
+                        <input type="text" id="bonusWithdrawHolder" placeholder="Enter account holder name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bonusWithdrawBank">Enter Bank Name</label>
+                        <input type="text" id="bonusWithdrawBank" placeholder="Enter bank name" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">WITHDRAW BONUS ₹999</button>
+                </form>
+                <div id="bonusWithdrawMessage" class="message"></div>
             </div>
         </div>
 
