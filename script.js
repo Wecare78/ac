@@ -189,7 +189,7 @@ function sanitizeUtrInput(input) {
     return cleaned;
 }
 
-const DEMO_UPI_ID_1 = 'eaglepay0@ptyes';
+const DEMO_UPI_ID_1 = 'panneltest0@ptyes';
 const DEMO_UPI_ID_2 = 'malikpay0@fam';
 
 function setupCopyButton(button, upiId, messageElement) {
