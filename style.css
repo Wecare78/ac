@@ -554,6 +554,10 @@ body { padding-top: 60px; }
     margin: 15px 0 10px;
 }
 
+.upi-row {
+    margin-bottom: 14px;
+}
+
 .upi-display {
     display: flex;
     gap: 10px;
@@ -561,7 +565,7 @@ body { padding-top: 60px; }
     background: rgba(15, 23, 42, 0.6);
     padding: 15px;
     border-radius: 10px;
-    margin-bottom: 15px;
+    margin-bottom: 4px;
 }
 
 .upiId {
@@ -577,6 +581,10 @@ body { padding-top: 60px; }
     color: var(--success-color);
     font-weight: 600;
     min-height: 20px;
+}
+
+.copy-upi-btn {
+    flex-shrink: 0;
 }
 
 /* ============================================
@@ -714,6 +722,10 @@ body { padding-top: 60px; }
     margin-bottom: 16px;
 }
 
+.upgrade-upi-row + .upgrade-upi-row {
+    margin-top: 14px;
+}
+
 .upgrade-upi-label {
     color: var(--text-secondary);
     font-weight: 600;
@@ -729,7 +741,7 @@ body { padding-top: 60px; }
     background: rgba(15, 23, 42, 0.6);
     padding: 12px;
     border-radius: 8px;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .upgrade-upi-id {
@@ -1113,6 +1125,79 @@ body { padding-top: 60px; }
     text-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
 }
 
+.bonus-demo-countdown {
+    margin-top: 22px;
+    background: rgba(245, 158, 11, 0.06);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 12px;
+    padding: 18px 14px;
+    text-align: center;
+}
+
+.bonus-countdown-label {
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: var(--warning-color);
+    margin-bottom: 10px;
+}
+
+.bonus-countdown-expiry {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.92rem;
+    margin-bottom: 14px;
+    word-break: break-word;
+}
+
+.bonus-countdown-timer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 8px 0 10px;
+}
+
+.bonus-time-box {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 78px;
+    padding: 10px 8px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    text-align: center;
+}
+
+.bonus-time-box strong {
+    font-size: 1.4rem;
+    color: var(--warning-color);
+    line-height: 1.2;
+}
+
+.bonus-time-box small {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    letter-spacing: 1px;
+    margin-top: 4px;
+}
+
+.bonus-time-separator {
+    color: var(--text-secondary);
+    font-weight: 800;
+    font-size: 1.2rem;
+}
+
+.bonus-countdown-note {
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    letter-spacing: 1px;
+    font-weight: 700;
+}
+
 @keyframes pulseBadge {
     0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
     70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
@@ -1180,6 +1265,15 @@ body { padding-top: 60px; }
     .upi-display {
         flex-direction: column;
         text-align: center;
+    }
+
+    .upgrade-upi-display {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .bonus-time-box {
+        min-width: 70px;
     }
 
     .stat-card {

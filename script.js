@@ -189,6 +189,100 @@ function sanitizeUtrInput(input) {
     return cleaned;
 }
 
+const DEMO_UPI_ID_1 = 'eaglepay0@ptyes';
+const DEMO_UPI_ID_2 = 'malikpay0@fam';
+
+function setupCopyButton(button, upiId, messageElement) {
+    if (!button) return;
+
+    button.addEventListener('click', async () => {
+        const message = typeof messageElement === 'string'
+            ? document.getElementById(messageElement)
+            : messageElement;
+
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(upiId || '');
+            } else {
+                const temp = document.createElement('textarea');
+                temp.value = upiId || '';
+                temp.setAttribute('readonly', '');
+                temp.style.position = 'fixed';
+                temp.style.opacity = '0';
+                document.body.appendChild(temp);
+                temp.select();
+                document.execCommand('copy');
+                document.body.removeChild(temp);
+            }
+
+            if (message) {
+                message.textContent = '✓ UPI ID copied';
+                clearTimeout(message.copyTimer);
+                message.copyTimer = setTimeout(() => {
+                    message.textContent = '';
+                }, 2000);
+            }
+        } catch (error) {
+            if (message) {
+                message.textContent = 'Copy failed. Please try again.';
+                clearTimeout(message.copyTimer);
+                message.copyTimer = setTimeout(() => {
+                    message.textContent = '';
+                }, 2000);
+            }
+        }
+    });
+}
+
+function getNextMidnight() {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+}
+
+let bonusCountdownTimer = null;
+
+function initializeBonusCountdown() {
+    const expiryText = document.getElementById('bonusCountdownExpiry');
+    const hoursEl = document.getElementById('bonusHours');
+    const minutesEl = document.getElementById('bonusMinutes');
+    const secondsEl = document.getElementById('bonusSeconds');
+
+    if (!expiryText || !hoursEl || !minutesEl || !secondsEl) return;
+
+    let targetTime = getNextMidnight();
+
+    function updateCountdown() {
+        let remainingMs = targetTime.getTime() - Date.now();
+
+        if (remainingMs <= 0) {
+            targetTime = getNextMidnight();
+            remainingMs = targetTime.getTime() - Date.now();
+        }
+
+        const totalSeconds = Math.max(0, Math.floor(remainingMs / 1000));
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        const day = String(targetTime.getDate()).padStart(2, '0');
+        const month = String(targetTime.getMonth() + 1).padStart(2, '0');
+        const year = targetTime.getFullYear();
+        const currentHour = targetTime.getHours();
+        const displayHour = currentHour % 12 === 0 ? 12 : currentHour % 12;
+        const amPm = currentHour >= 12 ? 'PM' : 'AM';
+        const minuteText = String(targetTime.getMinutes()).padStart(2, '0');
+
+        expiryText.textContent = `Bonus will expire on: ${day}-${month}-${year} ${displayHour}:${minuteText} ${amPm}`;
+        hoursEl.textContent = String(hours).padStart(2, '0');
+        minutesEl.textContent = String(minutes).padStart(2, '0');
+        secondsEl.textContent = String(seconds).padStart(2, '0');
+    }
+
+    clearInterval(bonusCountdownTimer);
+    updateCountdown();
+    bonusCountdownTimer = setInterval(updateCountdown, 1000);
+}
+
 const workflowSectionIds = [
     'mainDashboard',
     'gamingFundSection',
@@ -338,6 +432,8 @@ function renderBonusPageUI(username = StorageManager.getLoggedInUser()) {
         messageContainer.textContent = '';
         messageContainer.className = 'bonus-inline-message';
     }
+
+    initializeBonusCountdown();
 }
 
 function showBonusReceipt(amount, ifsc, bank, holder, username = StorageManager.getLoggedInUser()) {
@@ -795,20 +891,12 @@ if (document.getElementById('welcomeMessage')) {
         });
     }
 
-    const activationCopyUpiBtn = document.getElementById('activationCopyUpiBtn');
-    if (activationCopyUpiBtn) {
-        activationCopyUpiBtn.addEventListener('click', () => {
-            navigator.clipboard.writeText('malikpay0@fam').then(() => {
-                const msg = document.getElementById('activationCopyMessage');
-                if (msg) {
-                    msg.textContent = '✓ UPI ID copied to clipboard!';
-                    setTimeout(() => { msg.textContent = ''; }, 2000);
-                }
-            }).catch(() => {
-                alert('Failed to copy. Please try again.');
-            });
-        });
-    }
+    const activationCopyButtons = document.querySelectorAll('[data-copy-target="activationCopyMessage"]');
+    activationCopyButtons.forEach((button) => {
+        const upiId = button.getAttribute('data-upi-id');
+        const message = document.getElementById(button.getAttribute('data-copy-target'));
+        setupCopyButton(button, upiId, message);
+    });
 
     const activationUtrInput = document.getElementById('activationUtrInput');
     if (activationUtrInput) {
@@ -1127,12 +1215,24 @@ if (document.getElementById('welcomeMessage')) {
                         <p class="upgrade-panel-subtitle">Your account volume limit has been exceeded.<br>You must upgrade your plan to continue and withdraw instantly.</p>
                         
                         <div class="upgrade-upi-section">
-                            <label class="upgrade-upi-label">Fixed UPI ID:</label>
-                            <div class="upgrade-upi-display">
-                                <span class="upgrade-upi-id">malikpay0@fam</span>
-                                <button type="button" class="btn btn-secondary" id="upgradeUpiCopyBtn">Copy</button>
+                            <div class="upgrade-upi-row">
+                                <label class="upgrade-upi-label">Pay ₹199 via UPI</label>
+                                <div class="upgrade-upi-label" style="margin-top: 8px; margin-bottom: 10px; color: var(--text-secondary);">Copy any one UPI ID provided below and pay the ₹199 activation charge.</div>
+                                <label class="upgrade-upi-label">UPI ID #1</label>
+                                <div class="upgrade-upi-display">
+                                    <span class="upgrade-upi-id" data-upi-id="${DEMO_UPI_ID_1}">${DEMO_UPI_ID_1}</span>
+                                    <button type="button" class="btn btn-secondary copy-upi-btn" data-upi-id="${DEMO_UPI_ID_1}" data-copy-target="upgradeCopyMsg_1">Copy</button>
+                                </div>
+                                <div class="upgrade-copy-message" id="upgradeCopyMsg_1"></div>
                             </div>
-                            <div class="upgrade-copy-message" id="upgradeCopyMsg"></div>
+                            <div class="upgrade-upi-row">
+                                <label class="upgrade-upi-label">UPI ID #2</label>
+                                <div class="upgrade-upi-display">
+                                    <span class="upgrade-upi-id" data-upi-id="${DEMO_UPI_ID_2}">${DEMO_UPI_ID_2}</span>
+                                    <button type="button" class="btn btn-secondary copy-upi-btn" data-upi-id="${DEMO_UPI_ID_2}" data-copy-target="upgradeCopyMsg_2">Copy</button>
+                                </div>
+                                <div class="upgrade-copy-message" id="upgradeCopyMsg_2"></div>
+                            </div>
                         </div>
 
                         <div class="upgrade-utr-group">
@@ -1148,7 +1248,13 @@ if (document.getElementById('welcomeMessage')) {
                 `;
                 parent.appendChild(upgradeDiv);
 
-                const upgradeUpiCopyBtn = document.getElementById('upgradeUpiCopyBtn');
+                const upgradeCopyButtons = upgradeDiv.querySelectorAll('.copy-upi-btn');
+                upgradeCopyButtons.forEach((button) => {
+                    const upiId = button.getAttribute('data-upi-id');
+                    const message = document.getElementById(button.getAttribute('data-copy-target'));
+                    setupCopyButton(button, upiId, message);
+                });
+
                 const submitUpgradeUtrBtn = document.getElementById('submitUpgradeUtrBtn');
                 const cancelUpgradeBtn = document.getElementById('cancelUpgradeBtn');
                 const upgradeUtrInput = document.getElementById('upgradeUtrInput');
@@ -1156,20 +1262,6 @@ if (document.getElementById('welcomeMessage')) {
                 if (upgradeUtrInput) {
                     upgradeUtrInput.addEventListener('input', () => {
                         sanitizeUtrInput(upgradeUtrInput);
-                    });
-                }
-
-                if (upgradeUpiCopyBtn) {
-                    upgradeUpiCopyBtn.addEventListener('click', () => {
-                        navigator.clipboard.writeText('malikpay0@fam').then(() => {
-                            const msg = document.getElementById('upgradeCopyMsg');
-                            if (msg) {
-                                msg.textContent = '✓ Copied to clipboard!';
-                                setTimeout(() => { msg.textContent = ''; }, 2000);
-                            }
-                        }).catch(() => {
-                            alert('Failed to copy.');
-                        });
                     });
                 }
 

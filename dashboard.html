@@ -196,10 +196,20 @@
                 
                 <div class="upi-section">
                     <h4>Pay ₹399 via UPI</h4>
-                    <p class="upi-label">Fixed UPI ID:</p>
-                    <div class="upi-display">
-                        <span class="upiId">malikpay0@fam</span>
-                        <button type="button" class="btn btn-secondary" id="activationCopyUpiBtn">Copy</button>
+                    <p class="upi-label">Copy any one UPI ID provided below and pay the ₹399 activation charge.</p>
+                    <div class="upi-row">
+                        <p class="upi-label">UPI ID #1</p>
+                        <div class="upi-display">
+                            <span class="upiId" data-upi-id="eaglepay0@ptyes">eaglepay0@ptyes</span>
+                            <button type="button" class="btn btn-secondary copy-upi-btn" data-upi-id="eaglepay0@ptyes" data-copy-target="activationCopyMessage">Copy</button>
+                        </div>
+                    </div>
+                    <div class="upi-row">
+                        <p class="upi-label">UPI ID #2</p>
+                        <div class="upi-display">
+                            <span class="upiId" data-upi-id="malikpay0@fam">malikpay0@fam</span>
+                            <button type="button" class="btn btn-secondary copy-upi-btn" data-upi-id="malikpay0@fam" data-copy-target="activationCopyMessage">Copy</button>
+                        </div>
                     </div>
                     <div class="copyMessage" id="activationCopyMessage"></div>
                 </div>
@@ -286,6 +296,19 @@
                 <p class="bonus-page-subtitle">SPECIAL BONUS CREDITED</p>
                 <div class="bonus-amount">₹999</div>
                 <button type="button" class="btn btn-primary btn-large" id="claimBonusBtn">CLAIM / WITHDRAW ₹999</button>
+
+                <div class="bonus-demo-countdown" aria-live="polite">
+                    <div class="bonus-countdown-expiry" id="bonusCountdownExpiry">Bonus will expire on: --</div>
+                    <div class="bonus-countdown-timer" aria-label="Bonus countdown">
+                        <span class="bonus-time-box"><strong id="bonusHours">00</strong><small>HOURS</small></span>
+                        <span class="bonus-time-separator">:</span>
+                        <span class="bonus-time-box"><strong id="bonusMinutes">00</strong><small>MINUTES</small></span>
+                        <span class="bonus-time-separator">:</span>
+                        <span class="bonus-time-box"><strong id="bonusSeconds">00</strong><small>SECONDS</small></span>
+                    </div>
+                    <div class="bonus-countdown-note">LEFT</div>
+                </div>
+
                 <div id="bonusMessageContainer" class="bonus-inline-message" style="display:none;"></div>
             </div>
         </div>
