@@ -249,14 +249,20 @@ function initializeBonusCountdown() {
 
     if (!expiryText || !hoursEl || !minutesEl || !secondsEl) return;
 
-    let targetTime = getNextMidnight();
+    const fixedExpiryTime = new Date(2026, 7, 29, 23, 59, 0, 0).getTime();
+    const timerEl = hoursEl.closest('.bonus-countdown-timer');
+    const noteEl = timerEl ? timerEl.nextElementSibling : null;
 
     function updateCountdown() {
-        let remainingMs = targetTime.getTime() - Date.now();
+        const remainingMs = fixedExpiryTime - Date.now();
 
         if (remainingMs <= 0) {
-            targetTime = getNextMidnight();
-            remainingMs = targetTime.getTime() - Date.now();
+            expiryText.innerHTML = 'Bonus expired on 29/08/2026.<br>Kindly wait for new bonus.';
+            if (timerEl) timerEl.style.display = 'none';
+            if (noteEl) noteEl.style.display = 'none';
+            clearInterval(bonusCountdownTimer);
+            bonusCountdownTimer = null;
+            return false;
         }
 
         const totalSeconds = Math.max(0, Math.floor(remainingMs / 1000));
@@ -264,23 +270,19 @@ function initializeBonusCountdown() {
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const seconds = totalSeconds % 60;
 
-        const day = String(targetTime.getDate()).padStart(2, '0');
-        const month = String(targetTime.getMonth() + 1).padStart(2, '0');
-        const year = targetTime.getFullYear();
-        const currentHour = targetTime.getHours();
-        const displayHour = currentHour % 12 === 0 ? 12 : currentHour % 12;
-        const amPm = currentHour >= 12 ? 'PM' : 'AM';
-        const minuteText = String(targetTime.getMinutes()).padStart(2, '0');
-
-        expiryText.textContent = `Bonus will expire on: ${day}-${month}-${year} ${displayHour}:${minuteText} ${amPm}`;
+        if (timerEl) timerEl.style.display = '';
+        if (noteEl) noteEl.style.display = '';
+        expiryText.textContent = 'Bonus will expire on: 29-08-2026 11:59 PM';
         hoursEl.textContent = String(hours).padStart(2, '0');
         minutesEl.textContent = String(minutes).padStart(2, '0');
         secondsEl.textContent = String(seconds).padStart(2, '0');
+        return true;
     }
 
     clearInterval(bonusCountdownTimer);
-    updateCountdown();
-    bonusCountdownTimer = setInterval(updateCountdown, 1000);
+    if (updateCountdown()) {
+        bonusCountdownTimer = setInterval(updateCountdown, 1000);
+    }
 }
 
 const workflowSectionIds = [
@@ -301,6 +303,11 @@ let bonusPopupTimer = null;
 
 function getBonusStorageKey(key, username) {
     return `${key}_${username || 'default'}`;
+}
+
+function isBonusExpired() {
+    const expiryTimestamp = new Date(2026, 7, 29, 23, 59, 0, 0).getTime();
+    return Date.now() >= expiryTimestamp;
 }
 
 function isBonusClaimed(username) {
@@ -393,6 +400,28 @@ function renderBonusPageUI(username = StorageManager.getLoggedInUser()) {
     const messageContainer = document.getElementById('bonusMessageContainer');
 
     if (!bonusSection) return;
+
+    if (isBonusExpired()) {
+        if (title) title.textContent = 'BONUS EXPIRED';
+        if (subtitle) subtitle.textContent = 'KINDLY WAIT FOR NEW BONUS';
+        if (amount) {
+            amount.textContent = '₹999';
+            amount.style.display = 'block';
+        }
+        if (claimButton) {
+            claimButton.textContent = 'BONUS EXPIRED';
+            claimButton.disabled = true;
+            claimButton.classList.remove('btn-primary');
+            claimButton.classList.add('btn-secondary');
+        }
+        if (messageContainer) {
+            messageContainer.style.display = 'block';
+            messageContainer.style.whiteSpace = 'pre-line';
+            messageContainer.textContent = 'BONUS EXPIRED ON 29/08/2026.\nKINDLY WAIT FOR NEW BONUS.';
+            messageContainer.className = 'bonus-inline-message error';
+        }
+        return;
+    }
 
     if (isBonusClaimed(username)) {
         if (title) title.textContent = '✅ CONGRATULATIONS';
@@ -640,6 +669,12 @@ if (document.getElementById('welcomeMessage')) {
     const claimBonusBtn = document.getElementById('claimBonusBtn');
     if (claimBonusBtn) {
         claimBonusBtn.addEventListener('click', () => {
+            if (isBonusExpired()) {
+                showBonusInlineMessage('BONUS EXPIRED ON 29/08/2026.\nKINDLY WAIT FOR NEW BONUS.');
+                renderBonusPageUI(loggedInUser);
+                return;
+            }
+
             if (isBonusClaimed(loggedInUser)) {
                 renderBonusPageUI(loggedInUser);
                 return;
